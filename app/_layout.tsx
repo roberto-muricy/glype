@@ -1,12 +1,20 @@
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+} from '@expo-google-fonts/inter';
 import { useAuthBootstrap } from '@/src/hooks/useAuth';
 import { useAuthStore } from '@/src/stores/auth';
+import { tokens } from '@/src/theme/tokens';
 import '../global.css';
 
-// Lê a sessão persistida (SecureStore/localStorage), expõe via store
-// e mantém sincronizado via onAuthStateChange.
+SplashScreen.preventAutoHideAsync().catch(() => undefined);
+
 function AuthGate() {
   const router = useRouter();
   const segments = useSegments();
@@ -27,14 +35,22 @@ function AuthGate() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator />
+      <View
+        className="flex-1 items-center justify-center bg-bg-primary"
+        style={{ backgroundColor: tokens.color.bg.primary }}
+      >
+        <ActivityIndicator color={tokens.color.brand.primary} />
       </View>
     );
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: tokens.color.bg.primary },
+      }}
+    >
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
     </Stack>
@@ -43,5 +59,24 @@ function AuthGate() {
 
 export default function RootLayout() {
   useAuthBootstrap();
-  return <AuthGate />;
+
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync().catch(() => undefined);
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+
+  return (
+    <>
+      <StatusBar style="light" />
+      <AuthGate />
+    </>
+  );
 }
