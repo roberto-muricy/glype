@@ -134,6 +134,26 @@ npx expo start --web --clear
 ⚠️ Nunca coloque a `service_role` / secret key no `.env` do app — ela
 bypassa RLS e seria exposta no bundle.
 
+### Secrets das Edge Functions (Fase 3)
+
+As Edge Functions usam chaves de APIs externas que **nunca** podem ir
+para o cliente. Configure-as via Supabase CLI:
+
+```bash
+supabase secrets set RAWG_API_KEY=...
+supabase secrets set TWITCH_CLIENT_ID=...
+supabase secrets set TWITCH_CLIENT_SECRET=...
+```
+
+| Secret | Onde conseguir |
+|---|---|
+| `RAWG_API_KEY` | https://rawg.io/apidocs (free tier) |
+| `TWITCH_CLIENT_ID` | https://dev.twitch.tv/console/apps → Manage |
+| `TWITCH_CLIENT_SECRET` | mesma página, botão "New Secret" |
+
+`SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` já vêm injetadas
+automaticamente no runtime das functions — não precisa setar.
+
 ---
 
 ## Estrutura de pastas
@@ -177,6 +197,14 @@ supabase/
     0001_initial_schema.sql   # tabelas + índices
     0002_rls_policies.sql     # RLS + 17 policies
     0003_triggers.sql         # handle_new_user + update_updated_at
+    0004_cache_meta.sql       # cache de respostas RAWG/IGDB (Fase 3)
+  functions/
+    _shared/                  # módulos compartilhados (Deno)
+      cors.ts                 # headers CORS + helpers de response
+      rawg.ts                 # cliente RAWG (search, detail, trending)
+      igdb.ts                 # cliente IGDB (Twitch OAuth)
+      normalize.ts            # RAWG/IGDB → tipo Game canônico
+      cache.ts                # withCache() + service_role client
 
 app.config.ts                 # config do Expo + lê EXPO_PUBLIC_* para `extra`
 tailwind.config.js            # NativeWind preset + tema dark base
