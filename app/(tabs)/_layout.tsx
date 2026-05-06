@@ -1,18 +1,14 @@
 import { Tabs } from 'expo-router';
 import { tokens } from '@/src/theme/tokens';
+import { BottomTabBar } from '@/src/components/domain/BottomTabBar';
 
 export default function TabsLayout() {
   return (
     <Tabs
+      tabBar={(props) => <BottomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
         sceneStyle: { backgroundColor: tokens.color.bg.primary },
-        tabBarStyle: {
-          backgroundColor: tokens.color.bg.secondary,
-          borderTopColor: tokens.color.border.subtle,
-        },
-        tabBarActiveTintColor: tokens.color.brand.primary,
-        tabBarInactiveTintColor: tokens.color.text.secondary,
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
