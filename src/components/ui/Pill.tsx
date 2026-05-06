@@ -1,3 +1,4 @@
+import { type ReactNode } from 'react';
 import { Pressable, Text, type PressableProps } from 'react-native';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/src/utils/cn';
@@ -29,11 +30,18 @@ export interface PillProps
   extends Omit<PressableProps, 'children' | 'style'>,
     VariantProps<typeof pillVariants> {
   label: string;
+  children?: ReactNode;
   className?: string;
 }
 
 /** Pill clicável para gêneros, filtros e categorias. */
-export function Pill({ label, variant, className, ...rest }: PillProps) {
+export function Pill({
+  label,
+  variant,
+  className,
+  children,
+  ...rest
+}: PillProps) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -43,6 +51,7 @@ export function Pill({ label, variant, className, ...rest }: PillProps) {
       {...rest}
     >
       <Text className={labelVariants({ variant })}>{label}</Text>
+      {children}
     </Pressable>
   );
 }
