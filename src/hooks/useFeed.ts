@@ -1,0 +1,73 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  getFeed,
+  followUser,
+  unfollowUser,
+  isFollowing,
+  getFollowCounts,
+  searchProfiles,
+} from '@/src/services/feed.service';
+
+export const feedKeys = {
+  feed: ['feed'] as const,
+  following: (targetId: string) => ['feed', 'following', targetId] as const,
+  followCounts: (userId: string) => ['feed', 'counts', userId] as const,
+  profileSearch: (query: string) => ['feed', 'profileSearch', query] as const,
+};
+
+export function useFeed(limit = 20) {
+  return useQuery({
+    queryKey: feedKeys.feed,
+    queryFn: () => getFeed(limit),
+    staleTime: 1000 * 60 * 2, // 2min
+  });
+}
+
+export function useIsFollowing(targetId: string | null) {
+  return useQuery({
+    queryKey: feedKeys.following(targetId ?? ''),
+    queryFn: () => isFollowing(targetId!),
+    enabled: !!targetId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useFollowCounts(userId: string | null) {
+  return useQuery({
+    queryKey: feedKeys.followCounts(userId ?? ''),
+    queryFn: () => getFollowCounts(userId!),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useFollowUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (targetId: string) => followUser(targetId),
+    onSuccess: (_, targetId) => {
+      queryClient.invalidateQueries({ queryKey: feedKeys.following(targetId) });
+      queryClient.invalidateQueries({ queryKey: feedKeys.feed });
+    },
+  });
+}
+
+export function useUnfollowUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (targetId: string) => unfollowUser(targetId),
+    onSuccess: (_, targetId) => {
+      queryClient.invalidateQueries({ queryKey: feedKeys.following(targetId) });
+      queryClient.invalidateQueries({ queryKey: feedKeys.feed });
+    },
+  });
+}
+
+export function useProfileSearch(query: string) {
+  return useQuery({
+    queryKey: feedKeys.profileSearch(query),
+    queryFn: () => searchProfiles(query),
+    enabled: query.trim().length >= 2,
+    staleTime: 1000 * 60,
+  });
+}
