@@ -22,4 +22,5 @@ export { Skeleton } from './Skeleton';
 export type { SkeletonProps } from './Skeleton';
 export { Toast } from './Toast';
 export type { ToastProps } from './Toast';
+export { GlypeMark, GlypeLogo } from './GlypeLogo';
 export * from './icons';

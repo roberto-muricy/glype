@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Glype — Brand Package</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg-2: #111118;
+    --bg-3: #15151d;
+    --line: #1c1c26;
+    --line-2: #25252f;
+    --ink: #e7e7ee;
+    --ink-2: #b6b6c2;
+    --muted: #6b6b7a;
+    --blue: #0066ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font-family: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 56px 48px 96px;
+  }
+  .container { max-width: 1320px; margin: 0 auto; }
+
+  header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 24px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 28px;
+    margin-bottom: 48px;
+  }
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    font-family: "JetBrains Mono", monospace;
+  }
+  h1 {
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    margin: 12px 0 0;
+  }
+  h1 .accent { color: var(--blue); }
+  .meta {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-align: right;
+    line-height: 1.7;
+  }
+  .meta b { color: var(--ink); font-weight: 500; }
+
+  section { margin-top: 72px; }
+  section .section-eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  section h2 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    margin: 6px 0 24px;
+  }
+
+  .row {
+    display: grid;
+    gap: 16px;
+  }
+  .row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .row.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .row.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+  .card {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .card.light {
+    background: #f6f6f8;
+    border-color: #e6e6ea;
+  }
+  .card .canvas {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+  }
+  .card.light .canvas {
+    background: #fff;
+    border-color: #e6e6ea;
+  }
+  .card .canvas.tall { min-height: 240px; }
+
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .card.light .foot { color: #7a7a85; }
+
+  /* APP ICONS */
+  .icon-tile {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 22%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .icon-tile.blue { background: var(--blue); box-shadow: 0 12px 40px -16px rgba(0,102,255,0.6); }
+  .icon-tile.dark { background: #15151d; border: 1px solid #25252f; }
+  .icon-tile.light { background: #f6f6f8; border: 1px solid #e6e6ea; }
+  .icon-tile.gradient {
+    background: linear-gradient(160deg, #2a82ff 0%, #0044cc 100%);
+    box-shadow: 0 12px 40px -16px rgba(0,102,255,0.55);
+  }
+
+  /* COLOR SWATCHES */
+  .swatch {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .swatch .chip {
+    aspect-ratio: 4/3;
+  }
+  .swatch .info {
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .swatch .name {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .swatch .hex {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  .swatch .role {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* TYPE */
+  .type-card {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 32px;
+  }
+  .type-spec {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .type-display {
+    font-family: "Space Grotesk", sans-serif;
+    color: var(--ink);
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+  }
+  .type-display.blue { color: var(--blue); }
+
+  /* RULES */
+  .rules {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .rule {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .rule .preview {
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    padding: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    position: relative;
+  }
+  .rule.bad .preview::before, .rule.bad .preview::after {
+    /* No diagonal — use a corner X badge instead */
+  }
+  .rule .body {
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .rule .badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .rule.good .badge { background: rgba(46, 204, 113, 0.16); color: #2ecc71; }
+  .rule.bad .badge { background: rgba(231, 76, 60, 0.16); color: #ff5a4a; }
+  .rule .text {
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+
+  /* CLEAR SPACE */
+  .clearspace {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 280px;
+  }
+
+  /* CONTEXTS */
+  .ctx-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .ctx {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .ctx .canvas {
+    min-height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .ctx .ctx-foot {
+    padding: 14px 20px;
+    border-top: 1px solid var(--line);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Phone mock */
+  .phone {
+    width: 200px;
+    height: 400px;
+    background: #000;
+    border-radius: 32px;
+    border: 6px solid #1c1c26;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 30px 80px -30px rgba(0,0,0,0.8);
+  }
+  .phone .notch {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    width: 60px; height: 18px; background: #000; border-radius: 12px; z-index: 2;
+  }
+  .phone .screen {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 36px 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .phone .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .phone .app {
+    aspect-ratio: 1/1;
+    border-radius: 22%;
+    background: #1c1c26;
+  }
+  .phone .app.glype {
+    background: var(--blue);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Header bar mock */
+  .topbar {
+    width: 100%; max-width: 460px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .topbar .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .topbar .nav {
+    display: flex;
+    gap: 18px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .topbar .nav .active { color: var(--blue); }
+  .topbar .avatar {
+    width: 22px; height: 22px; border-radius: 999px; background: #25252f;
+  }
+
+  /* Sticker / business card */
+  .card-mock {
+    width: 320px;
+    aspect-ratio: 16/9;
+    background: var(--blue);
+    border-radius: 14px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #fff;
+    box-shadow: 0 30px 80px -30px rgba(0,102,255,0.55);
+  }
+  .card-mock .who {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .card-mock .role {
+    font-size: 11px;
+    opacity: 0.7;
+    font-family: "JetBrains Mono", monospace;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  footer {
+    margin-top: 96px;
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div>
+      <div class="eyebrow">Glype · Brand Package · v1</div>
+      <h1>The mark, the system,<br>and how to use it<span class="accent">.</span></h1>
+    </div>
+    <div class="meta">
+      <div>direction <b>10 · tilted thumbstick</b></div>
+      <div>ring <b>6u</b> · cap <b>NE 45°</b> · prop <b>47%</b></div>
+      <div>type <b>Space Grotesk 600</b></div>
+    </div>
+  </header>
+
+  <!-- ============ PRIMARY MARK ============ -->
+  <section>
+    <div class="section-eyebrow">01 — Primary mark</div>
+    <h2>The lockup</h2>
+    <div class="card" style="padding:0; border:none; background:transparent;">
+      <div class="canvas tall" style="border:1px solid var(--line); border-radius:14px; background:var(--bg-2); min-height:280px; padding:60px;">
+        <svg width="540" height="160" viewBox="0 0 540 160" fill="none" aria-label="Glype primary lockup">
+          <g transform="translate(0 14)">
+            <circle cx="64" cy="64" r="50" stroke="#0066ff" stroke-width="8" fill="none"/>
+            <circle cx="79" cy="49" r="23.5" fill="#0066ff"/>
+          </g>
+          <text x="148" y="108" font-family="'Space Grotesk', sans-serif" font-weight="600" font-size="96" fill="#0066ff" letter-spacing="-3.5">glype</text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LOCKUP VARIANTS ============ -->
+  <section>
+    <div class="section-eyebrow">02 — Lockup variants</div>
+    <h2>Horizontal · vertical · stacked</h2>
+    <div class="row cols-3">
+      <div class="card">
+        <div class="canvas">
+          <svg width="280" height="80" viewBox="0 0 280 80" fill="none">
+            <g transform="translate(8 8)">
+              <circle cx="32" cy="32" r="26" stroke="#0066ff" stroke-width="5" fill="none"/>
+              <circle cx="40" cy="24" r="12" fill="#0066ff"/>
+            </g>
+            <text x="80" y="56" font-family="'Space Grotesk', sans-serif" font-weight="600" font-size="48" fill="#0066ff" letter-spacing="-1.5">glype</text>
+          </svg>
+        </div>
+        <div class="foot"><span>Horizontal · primary</span><span>min 120px wide</span></div>
+      </div>
+      <div class="card">
+        <div class="canvas">
+          <svg width="160" height="180" viewBox="0 0 160 180" fill="none">
+            <g transform="translate(50 10)">
+              <circle cx="32" cy="32" r="26" stroke="#0066ff" stroke-width="5" fill="none"/>
+              <circle cx="40" cy="24" r="12" fill="#0066ff"/>
+            </g>
+            <text x="80" y="125" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-weight="600" font-size="40" fill="#0066ff" letter-spacing="-1.2">glype</text>
+          </svg>
+        </div>
+        <div class="foot"><span>Vertical</span><span>min 80px wide</span></div>
+      </div>
+      <div class="card">
+        <div class="canvas">
+          <svg width="280" height="80" viewBox="0 0 280 80" fill="none">
+            <g transform="translate(8 8)">
+              <circle cx="32" cy="32" r="26" stroke="#0066ff" stroke-width="5" fill="none"/>
+              <circle cx="40" cy="24" r="12" fill="#0066ff"/>
+            </g>
+            <text x="80" y="42" font-family="'Space Grotesk', sans-serif" font-weight="600" font-size="32" fill="#0066ff" letter-spacing="-0.8">glype</text>
+            <text x="80" y="62" font-family="'JetBrains Mono', monospace" font-weight="500" font-size="10" fill="#6b6b7a" letter-spacing="2.5">PLAYSTATION · REVIEWS</text>
+          </svg>
+        </div>
+        <div class="foot"><span>Stacked + tagline</span><span>marketing only</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ APP ICONS ============ -->
+  <section>
+    <div class="section-eyebrow">03 — App icons</div>
+    <h2>iOS · Android · favicons</h2>
+    <div class="row cols-4">
+      <div class="card">
+        <div class="canvas" style="padding:24px;">
+          <div class="icon-tile blue">
+            <svg width="60%" viewBox="0 0 100 100" fill="none">
+              <circle cx="50" cy="50" r="38" stroke="#fff" stroke-width="6" fill="none"/>
+              <circle cx="61.3" cy="38.7" r="18" fill="#fff"/>
+            </svg>
+          </div>
+        </div>
+        <div class="foot"><span>Primary</span><span>Blue · iOS</span></div>
+      </div>
+      <div class="card">
+        <div class="canvas" style="padding:24px;">
+          <div class="icon-tile gradient">
+            <svg width="60%" viewBox="0 0 100 100" fill="none">
+              <circle cx="50" cy="50" r="38" stroke="#fff" stroke-width="6" fill="none"/>
+              <circle cx="61.3" cy="38.7" r="18" fill="#fff"/>
+            </svg>
+          </div>
+        </div>
+        <div class="foot"><span>Gradient</span><span>Marketing</span></div>
+      </div>
+      <div class="card">
+        <div class="canvas" style="padding:24px;">
+          <div class="icon-tile dark">
+            <svg width="60%" viewBox="0 0 100 100" fill="none">
+              <circle cx="50" cy="50" r="38" stroke="#0066ff" stroke-width="6" fill="none"/>
+              <circle cx="61.3" cy="38.7" r="18" fill="#0066ff"/>
+            </svg>
+          </div>
+        </div>
+        <div class="foot"><span>Dark</span><span>Android adaptive</span></div>
+      </div>
+      <div class="card light">
+        <div class="canvas">
+          <div class="icon-tile light">
+            <svg width="60%" viewBox="0 0 100 100" fill="none">
+              <circle cx="50" cy="50" r="38" stroke="#0066ff" stroke-width="6" fill="none"/>
+              <circle cx="61.3" cy="38.7" r="18" fill="#0066ff"/>
+            </svg>
+          </div>
+        </div>
+        <div class="foot"><span>Light</span><span>Favicon · web</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MONO + LIGHT ============ -->
+  <section>
+    <div class="section-eyebrow">04 — Mono &amp; surface variants</div>
+    <h2>How the mark behaves on every background</h2>
+    <div class="row cols-4">
+      <div class="card">
+        <div class="canvas" style="background:#0066ff; border-color:#0066ff;">
+          <svg width="46%" viewBox="0 0 100 100" fill="none">
+            <circle cx="50" cy="50" r="38" stroke="#fff" stroke-width="6" fill="none"/>
+            <circle cx="61.3" cy="38.7" r="18" fill="#fff"/>
+          </svg>
+        </div>
+        <div class="foot"><span>White on blue</span><span>—</span></div>
+      </div>
+      <div class="card">
+        <div class="canvas" style="background:#0a0a0f;">
+          <svg width="46%" viewBox="0 0 100 100" fill="none">
+            <circle cx="50" cy="50" r="38" stroke="#0066ff" stroke-width="6" fill="none"/>
+            <circle cx="61.3" cy="38.7" r="18" fill="#0066ff"/>
+          </svg>
+        </div>
+        <div class="foot"><span>Blue on dark</span><span>primary</span></div>
+      </div>
+      <div class="card light">
+        <div class="canvas">
+          <svg width="46%" viewBox="0 0 100 100" fill="none">
+            <circle cx="50" cy="50" r="38" stroke="#0066ff" stroke-width="6" fill="none"/>
+            <circle cx="61.3" cy="38.7" r="18" fill="#0066ff"/>
+          </svg>
+        </div>
+        <div class="foot"><span>Blue on white</span><span>print</span></div>
+      </div>
+      <div class="card light">
+        <div class="canvas">
+          <svg width="46%" viewBox="0 0 100 100" fill="none">
+            <circle cx="50" cy="50" r="38" stroke="#0a0a0f" stroke-width="6" fill="none"/>
+            <circle cx="61.3" cy="38.7" r="18" fill="#0a0a0f"/>
+          </svg>
+        </div>
+        <div class="foot"><span>Mono · ink</span><span>1-color</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COLOR ============ -->
+  <section>
+    <div class="section-eyebrow">05 — Color</div>
+    <h2>The palette</h2>
+    <div class="row cols-4">
+      <div class="swatch">
+        <div class="chip" style="background:#0066ff;"></div>
+        <div class="info">
+          <div class="name">Glype Blue</div>
+          <div class="hex">#0066FF</div>
+          <div class="role">Primary · brand · CTAs</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#0a0a0f;"></div>
+        <div class="info">
+          <div class="name">Ink</div>
+          <div class="hex">#0A0A0F</div>
+          <div class="role">Default surface</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#e7e7ee;"></div>
+        <div class="info">
+          <div class="name">Bone</div>
+          <div class="hex" style="color:#7a7a85;">#E7E7EE</div>
+          <div class="role">Body text on dark · light surface</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#6b6b7a;"></div>
+        <div class="info">
+          <div class="name">Slate</div>
+          <div class="hex">#6B6B7A</div>
+          <div class="role">Muted · meta · monospace</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TYPE ============ -->
+  <section>
+    <div class="section-eyebrow">06 — Typography</div>
+    <h2>Space Grotesk · JetBrains Mono</h2>
+    <div class="row cols-2">
+      <div class="type-card">
+        <div class="type-spec">Display · Space Grotesk 600 · -0.025em</div>
+        <div class="type-display blue" style="font-size:84px;">glype</div>
+        <div class="type-display" style="font-size:34px; margin-top:24px; color:var(--ink);">Reviews you can&nbsp;trust.</div>
+        <div class="type-display" style="font-size:18px; margin-top:10px; color:var(--ink-2); font-weight:500; letter-spacing:-0.005em; line-height:1.5;">Built by players, for players. Curated takes on every PlayStation release.</div>
+      </div>
+      <div class="type-card">
+        <div class="type-spec">Mono · JetBrains Mono 500 · +0.06em</div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase;">REVIEW · 047 · 2026.05.07</div>
+        <div style="margin-top: 18px; display:flex; gap:16px; align-items:center;">
+          <div style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:48px; color:var(--ink); letter-spacing:-0.025em;">9.2</div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:0.08em; line-height:1.7;">
+            <div>SCORE · OUT OF 10</div>
+            <div>BASED ON 4,217 REVIEWS</div>
+          </div>
+        </div>
+        <div style="margin-top:24px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:0.08em; line-height:1.7;">
+          <div>WEIGHTS · 400 / 500</div>
+          <div>USE FOR · METADATA · NUMBERS · SCORES · TAGS</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CLEAR SPACE ============ -->
+  <section>
+    <div class="section-eyebrow">07 — Clear space</div>
+    <h2>Give the mark room — 1× cap diameter on all sides</h2>
+    <div class="card">
+      <div class="clearspace">
+        <svg width="380" height="200" viewBox="0 0 380 200" fill="none">
+          <!-- Clear space guides (cap diameter = 38u in this viewbox; we draw at scale) -->
+          <!-- Logo: ring r=38, cap r=18 → cap diameter = 36 -->
+          <!-- The lockup spans from x=12 (ring left) to x≈260 (e right). Total width ~248. Add 36 padding all sides. -->
+          <g stroke="#1c1c26" stroke-width="1" stroke-dasharray="3 3" fill="none">
+            <rect x="12" y="44" width="332" height="112" />
+          </g>
+          <!-- Cap-diameter measure markers -->
+          <g stroke="#0066ff" stroke-width="1" opacity="0.35">
+            <line x1="12" y1="36" x2="48" y2="36"/>
+            <line x1="12" y1="32" x2="12" y2="40"/>
+            <line x1="48" y1="32" x2="48" y2="40"/>
+          </g>
+          <text x="30" y="28" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#6b6b7a" letter-spacing="1.5">1× CAP</text>
+
+          <!-- Lockup -->
+          <g transform="translate(48 60)">
+            <circle cx="32" cy="40" r="32" stroke="#0066ff" stroke-width="6" fill="none"/>
+            <circle cx="42" cy="30" r="15" fill="#0066ff"/>
+            <text x="84" y="58" font-family="'Space Grotesk', sans-serif" font-weight="600" font-size="56" fill="#0066ff" letter-spacing="-2">glype</text>
+          </g>
+        </svg>
+      </div>
+      <div class="foot"><span>Clear space rule</span><span>1× cap diameter, all sides</span></div>
+    </div>
+  </section>
+
+  <!-- ============ DO / DONT ============ -->
+  <section>
+    <div class="section-eyebrow">08 — Do &amp; don't</div>
+    <h2>The mark is geometric — keep it that way</h2>
+    <div class="rules">
+      <div class="rule good">
+        <div class="preview">
+          <svg width="140" viewBox="0 0 100 100" fill="none">
+            <circle cx="50" cy="50" r="38" stroke="#0066ff" stroke-width="6" fill="none"/>
+            <circle cx="61.3" cy="38.7" r="18" fill="#0066ff"/>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="badge">✓</div>
+          <div class="text">Use the mark at its locked proportions — ring 6u, cap NE 45° at 47%.</div>
+        </div>
+      </div>
+      <div class="rule bad">
+        <div class="preview">
+          <svg width="140" viewBox="0 0 100 100" fill="none">
+            <circle cx="50" cy="50" r="38" stroke="#0066ff" stroke-width="6" fill="none" transform="scale(1 0.7) translate(0 22)"/>
+            <circle cx="61.3" cy="38.7" r="18" fill="#0066ff" transform="scale(1 0.7) translate(0 22)"/>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="badge">×</div>
+          <div class="text">Don't stretch, squash, or distort the mark in any direction.</div>
+        </div>
+      </div>
+      <div class="rule bad">
+        <div class="preview">
+          <svg width="140" viewBox="0 0 100 100" fill="none">
+            <defs>
+              <linearGradient id="bad-grad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#ff00aa"/>
+                <stop offset="1" stop-color="#00e5ff"/>
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="38" stroke="url(#bad-grad)" stroke-width="6" fill="none"/>
+            <circle cx="61.3" cy="38.7" r="18" fill="url(#bad-grad)"/>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="badge">×</div>
+          <div class="text">Don't recolor the mark or apply gradients beyond the approved set.</div>
+        </div>
+      </div>
+      <div class="rule bad">
+        <div class="preview" style="background:#1c2a3a;">
+          <svg width="140" viewBox="0 0 100 100" fill="none">
+            <circle cx="50" cy="50" r="38" stroke="#0066ff" stroke-width="6" fill="none"/>
+            <circle cx="61.3" cy="38.7" r="18" fill="#0066ff"/>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="badge">×</div>
+          <div class="text">Don't place the mark on low-contrast or competing-blue surfaces.</div>
+        </div>
+      </div>
+      <div class="rule bad">
+        <div class="preview">
+          <svg width="140" viewBox="0 0 100 100" fill="none">
+            <g transform="rotate(28 50 50)">
+              <circle cx="50" cy="50" r="38" stroke="#0066ff" stroke-width="6" fill="none"/>
+              <circle cx="61.3" cy="38.7" r="18" fill="#0066ff"/>
+            </g>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="badge">×</div>
+          <div class="text">Don't rotate the mark — the cap angle is fixed at NE 45°.</div>
+        </div>
+      </div>
+      <div class="rule bad">
+        <div class="preview">
+          <svg width="140" viewBox="0 0 100 100" fill="none">
+            <circle cx="50" cy="50" r="38" stroke="#0066ff" stroke-width="6" fill="none" stroke-dasharray="4 3"/>
+            <circle cx="61.3" cy="38.7" r="18" fill="none" stroke="#0066ff" stroke-width="3"/>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="badge">×</div>
+          <div class="text">Don't outline, dash, or otherwise reinterpret the mark's construction.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ IN CONTEXT ============ -->
+  <section>
+    <div class="section-eyebrow">09 — In context</div>
+    <h2>How it shows up in the wild</h2>
+    <div class="ctx-row">
+      <div class="ctx">
+        <div class="canvas" style="padding:32px;">
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="screen">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted); letter-spacing:0.06em; display:flex; justify-content:space-between; padding: 0 4px;">
+                <span>9:41</span><span>5G</span>
+              </div>
+              <div class="grid" style="margin-top:8px;">
+                <div class="app"></div>
+                <div class="app"></div>
+                <div class="app"></div>
+                <div class="app glype">
+                  <svg width="60%" viewBox="0 0 100 100" fill="none">
+                    <circle cx="50" cy="50" r="38" stroke="#fff" stroke-width="7" fill="none"/>
+                    <circle cx="61.3" cy="38.7" r="18" fill="#fff"/>
+                  </svg>
+                </div>
+                <div class="app"></div>
+                <div class="app"></div>
+                <div class="app"></div>
+                <div class="app"></div>
+                <div class="app"></div>
+                <div class="app"></div>
+                <div class="app"></div>
+                <div class="app"></div>
+              </div>
+              <div style="font-family:'Space Grotesk',sans-serif; font-size:9px; color:var(--ink-2); text-align:center; margin-top:6px;">glype</div>
+            </div>
+          </div>
+        </div>
+        <div class="ctx-foot"><span>Home screen</span><span>iOS · 60×60pt</span></div>
+      </div>
+      <div class="ctx">
+        <div class="canvas" style="flex-direction:column; gap:32px; padding:48px;">
+          <div class="topbar">
+            <div class="brand">
+              <svg width="24" height="24" viewBox="0 0 100 100" fill="none">
+                <circle cx="50" cy="50" r="38" stroke="#0066ff" stroke-width="6" fill="none"/>
+                <circle cx="61.3" cy="38.7" r="18" fill="#0066ff"/>
+              </svg>
+              <span style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:16px; color:var(--blue); letter-spacing:-0.5px;">glype</span>
+            </div>
+            <div class="nav">
+              <span class="active">Reviews</span>
+              <span>News</span>
+              <span>Lists</span>
+            </div>
+            <div class="avatar"></div>
+          </div>
+          <div class="card-mock">
+            <svg width="36" height="36" viewBox="0 0 100 100" fill="none">
+              <circle cx="50" cy="50" r="38" stroke="#fff" stroke-width="7" fill="none"/>
+              <circle cx="61.3" cy="38.7" r="18" fill="#fff"/>
+            </svg>
+            <div>
+              <div class="who">Marina Costa</div>
+              <div class="role">SENIOR EDITOR · GLYPE</div>
+            </div>
+          </div>
+        </div>
+        <div class="ctx-foot"><span>Web nav · business card</span><span>marketing</span></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div>glype / brand package · v1 · 2026</div>
+  <div>built on direction 10 · tilted thumbstick</div>
+</footer>
+
+</body>
+</html>
