@@ -6,6 +6,12 @@ import {
   View,
   type PressableProps,
 } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/src/utils/cn';
 import { tokens } from '@/src/theme/tokens';
@@ -63,7 +69,7 @@ export interface ButtonProps
   children?: ReactNode;
 }
 
-/** Botão padrão do design system. Use `variant` para hierarquia visual. */
+/** Botão padrão do design system com animação de pressão e haptic. */
 export const Button = forwardRef<View, ButtonProps>(function Button(
   {
     label,
@@ -75,39 +81,66 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
     className,
     children,
     accessibilityLabel,
+    onPress,
     ...rest
   },
   ref,
 ) {
   const isDisabled = disabled === true || loading;
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.96, { damping: 15, stiffness: 400 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 400 });
+  };
+
+  const handlePress = (e: Parameters<NonNullable<PressableProps['onPress']>>[0]) => {
+    if (!isDisabled) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      onPress?.(e);
+    }
+  };
+
   return (
-    <Pressable
-      ref={ref}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled: isDisabled, busy: loading }}
-      disabled={isDisabled}
-      className={cn(
-        buttonVariants({ variant, size, disabled: isDisabled }),
-        className,
-      )}
-      {...rest}
-    >
-      {loading ? (
-        <ActivityIndicator
-          color={
-            variant === 'ghost' ? tokens.color.brand.primary : tokens.color.text.primary
-          }
-        />
-      ) : (
-        <>
-          {icon}
-          {label != null && (
-            <Text className={labelVariants({ variant, size })}>{label}</Text>
-          )}
-          {children}
-        </>
-      )}
-    </Pressable>
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        ref={ref}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? label}
+        accessibilityState={{ disabled: isDisabled, busy: loading }}
+        disabled={isDisabled}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={handlePress}
+        className={cn(
+          buttonVariants({ variant, size, disabled: isDisabled }),
+          className,
+        )}
+        {...rest}
+      >
+        {loading ? (
+          <ActivityIndicator
+            color={
+              variant === 'ghost' ? tokens.color.brand.primary : tokens.color.text.primary
+            }
+          />
+        ) : (
+          <>
+            {icon}
+            {label != null && (
+              <Text className={labelVariants({ variant, size })}>{label}</Text>
+            )}
+            {children}
+          </>
+        )}
+      </Pressable>
+    </Animated.View>
   );
 });

@@ -1,4 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { cn } from '@/src/utils/cn';
 import { tokens } from '@/src/theme/tokens';
@@ -13,6 +16,8 @@ import {
   PersonFilledIcon,
   PlusIcon,
 } from '../ui/icons';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 // Mapeamento por nome de rota → par de ícones (off / on).
 const TAB_ICONS: Record<string, { Off: React.FC<{ size?: number; color?: string }>; On: React.FC<{ size?: number; color?: string }> }> = {
@@ -35,6 +40,9 @@ const TAB_LABEL: Record<string, string> = {
  * O botão "+ review" é apenas visual nesta fase — destino real na Fase 3.
  */
 export function BottomTabBar({ state, navigation }: BottomTabBarProps) {
+  const router = useRouter();
+  const plusScale = useSharedValue(1);
+  const plusStyle = useAnimatedStyle(() => ({ transform: [{ scale: plusScale.value }] }));
   // Insere um item "spacer" no meio para o botão de + review se sobrepor.
   const half = Math.ceil(state.routes.length / 2);
   const left = state.routes.slice(0, half);
@@ -91,17 +99,23 @@ export function BottomTabBar({ state, navigation }: BottomTabBarProps) {
         {right.map((r) => renderTab(r, state.routes.indexOf(r)))}
       </View>
 
-      {/* Botão central de + review. Apenas visual nesta fase. */}
+      {/* Botão central de + review */}
       <View className="absolute left-0 right-0 items-center" style={{ top: -22 }}>
-        <Pressable
+        <AnimatedPressable
           accessibilityRole="button"
           accessibilityLabel="Novo review"
           hitSlop={8}
+          style={plusStyle}
           className="h-14 w-14 items-center justify-center rounded-full bg-brand-primary"
-          // TODO Fase 3: ligar com a rota de criação de review
+          onPressIn={() => { plusScale.value = withSpring(0.92, { damping: 15, stiffness: 400 }); }}
+          onPressOut={() => { plusScale.value = withSpring(1, { damping: 15, stiffness: 400 }); }}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+            router.push('/review/pick-game' as never);
+          }}
         >
           <PlusIcon size={26} color={tokens.color.text.primary} />
-        </Pressable>
+        </AnimatedPressable>
       </View>
     </View>
   );

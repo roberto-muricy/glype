@@ -1,9 +1,12 @@
 import { Image, Pressable, Text, View, type PressableProps } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/src/utils/cn';
 import { tokens } from '@/src/theme/tokens';
 import { ScoreBadge } from './ScoreBadge';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const cardVariants = cva('overflow-hidden rounded-xl bg-bg-elevated', {
   variants: {
@@ -47,11 +50,17 @@ export function GameCard({
   className,
   ...rest
 }: GameCardProps) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="button"
       accessibilityLabel={title}
       className={cn(cardVariants({ size }), className)}
+      style={animatedStyle}
+      onPressIn={() => { scale.value = withSpring(0.96, { damping: 15, stiffness: 400 }); }}
+      onPressOut={() => { scale.value = withSpring(1, { damping: 15, stiffness: 400 }); }}
       {...rest}
     >
       <View className="relative">
@@ -100,6 +109,6 @@ export function GameCard({
           )}
         </View>
       )}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
