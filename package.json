@@ -10,7 +10,12 @@
     "lint": "expo lint",
     "seed:games": "tsx scripts/seed-popular-games.ts",
     "generate:icons": "node scripts/generate-icons.cjs",
-    "gen:types": "supabase gen types typescript --project-id faryowbibtszfnwawecs > src/types/database.types.ts"
+    "gen:types": "supabase gen types typescript --project-id faryowbibtszfnwawecs > src/types/database.types.ts",
+    "build:ios": "eas build --platform ios --profile production",
+    "build:android": "eas build --platform android --profile production",
+    "build:preview:ios": "eas build --platform ios --profile preview",
+    "build:dev": "eas build --platform ios --profile development",
+    "submit:ios": "eas submit --platform ios --latest"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

@@ -1,10 +1,10 @@
 import { type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import { cn } from '@/src/utils/cn';
-import { GlypeMark } from './GlypeLogo';
+import { tokens } from '@/src/theme/tokens';
 
 export interface EmptyStateProps {
-  /** Ícone customizado. Se omitido, usa o GlypeMark da marca. */
+  /** Ícone customizado (ReactNode). Se omitido usa o símbolo da marca em texto. */
   icon?: ReactNode;
   title: string;
   subtitle?: string;
@@ -12,7 +12,7 @@ export interface EmptyStateProps {
   className?: string;
 }
 
-/** Bloco para listas vazias. Usa GlypeMark por padrão como visual central. */
+/** Bloco para listas vazias. Ícone redondo + título + subtítulo opcional. */
 export function EmptyState({ icon, title, subtitle, action, className }: EmptyStateProps) {
   return (
     <View
@@ -21,8 +21,23 @@ export function EmptyState({ icon, title, subtitle, action, className }: EmptySt
         className,
       )}
     >
-      <View className="mb-5 h-16 w-16 items-center justify-center rounded-full bg-bg-elevated">
-        {icon ?? <GlypeMark size={32} tone="blue" />}
+      <View
+        className="mb-5 items-center justify-center rounded-full bg-bg-elevated"
+        style={{ width: 64, height: 64 }}
+      >
+        {icon ?? (
+          /* Marca Glype em texto — não depende de react-native-svg */
+          <Text
+            style={{
+              fontFamily: tokens.fontFamily.medium,
+              fontSize: 22,
+              color: tokens.color.brand.primary,
+              letterSpacing: -0.5,
+            }}
+          >
+            G
+          </Text>
+        )}
       </View>
       <Text className="text-h2 text-text-primary text-center">{title}</Text>
       {subtitle != null && (

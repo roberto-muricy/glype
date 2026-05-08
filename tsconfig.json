@@ -9,13 +9,18 @@
     }
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "scripts/**/*.ts",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "nativewind-env.d.ts"
   ],
   "exclude": [
-    "supabase/functions"
+    "supabase/functions/**",
+    ".claude",
+    "node_modules"
   ]
 }

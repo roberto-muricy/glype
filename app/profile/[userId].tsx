@@ -2,7 +2,7 @@ import { ActionSheetIOS, Alert, ActivityIndicator, Image, Platform, Pressable, S
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Avatar, Button, GlypeMark, Pill, SectionHeader } from '@/src/components/ui';
+import { Avatar, Button, Pill, SectionHeader } from '@/src/components/ui';
 import { ScoreBadge } from '@/src/components/domain';
 import { usePublicProfile, useUserPublicReviews } from '@/src/hooks/useProfile';
 import { useFollowCounts, useIsFollowing, useFollowUser, useUnfollowUser } from '@/src/hooks/useFeed';
@@ -157,7 +157,7 @@ export default function PublicProfileScreen() {
           </View>
         ) : (reviews?.length ?? 0) === 0 ? (
           <View className="items-center py-12 gap-4">
-            <GlypeMark size={40} tone="blue" />
+            <Text className="text-display-1 text-brand-primary">G</Text>
             <Text className="text-body-lg text-text-secondary text-center px-8">
               {isMe
                 ? 'Você ainda não escreveu nenhuma review.\nToque em + para começar.'
