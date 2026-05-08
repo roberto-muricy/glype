@@ -25,10 +25,18 @@ export function ScoreSlider({ value, onValueChange, className }: ScoreSliderProp
   return (
     <View className={cn('gap-3', className)}>
       <View className="flex-row items-baseline gap-2">
-        <Text className="text-display-1 text-text-primary">
+        <Text
+          className="text-display-1 text-text-primary"
+          style={{ fontFamily: tokens.fontFamily.monoMedium }}
+        >
           {value.toFixed(1)}
         </Text>
-        <Text className="text-body text-text-secondary">/ 10</Text>
+        <Text
+          className="text-body text-text-secondary"
+          style={{ fontFamily: tokens.fontFamily.mono }}
+        >
+          / 10
+        </Text>
       </View>
       <Text className="text-section uppercase text-brand-muted">
         {semanticLabel(value)}

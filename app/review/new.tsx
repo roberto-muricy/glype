@@ -63,7 +63,7 @@ export default function NewReviewScreen() {
   const bodyValid = bodyLen >= BODY_MIN;
 
   const createReview = useCreateReview();
-  const updateReview = useUpdateReview(''); // gameId resolvido no submit
+  const updateReview = useUpdateReview();
 
   const isSubmitting = createReview.isPending || updateReview.isPending;
 

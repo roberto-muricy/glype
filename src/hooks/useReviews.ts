@@ -50,27 +50,47 @@ export function useCreateReview() {
   });
 }
 
-export function useUpdateReview(gameId: string) {
+// gameId é passado como variável da mutation (não no hook) para permitir
+// o uso em telas que não conhecem o gameId no momento da inicialização.
+export function useUpdateReview() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ reviewId, draft }: { reviewId: string; draft: Partial<ReviewDraft> }) =>
-      updateReview(reviewId, draft),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: reviewKeys.myReview(gameId) });
-      queryClient.invalidateQueries({ queryKey: reviewKeys.gameReviews(gameId) });
+    mutationFn: ({
+      reviewId,
+      draft,
+    }: {
+      reviewId: string;
+      draft: Partial<ReviewDraft>;
+      gameId?: string; // usado apenas para invalidação
+    }) => updateReview(reviewId, draft),
+    onSuccess: (_, { gameId }) => {
+      if (gameId) {
+        queryClient.invalidateQueries({ queryKey: reviewKeys.myReview(gameId) });
+        queryClient.invalidateQueries({ queryKey: reviewKeys.gameReviews(gameId) });
+      }
+      // invalidação ampla como fallback
+      queryClient.invalidateQueries({ queryKey: ['reviews'] });
     },
   });
 }
 
-export function useDeleteReview(gameId: string) {
+export function useDeleteReview() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (reviewId: string) => deleteReview(reviewId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: reviewKeys.myReview(gameId) });
-      queryClient.invalidateQueries({ queryKey: reviewKeys.gameReviews(gameId) });
+    mutationFn: ({
+      reviewId,
+    }: {
+      reviewId: string;
+      gameId?: string;
+    }) => deleteReview(reviewId),
+    onSuccess: (_, { gameId }) => {
+      if (gameId) {
+        queryClient.invalidateQueries({ queryKey: reviewKeys.myReview(gameId) });
+        queryClient.invalidateQueries({ queryKey: reviewKeys.gameReviews(gameId) });
+      }
+      queryClient.invalidateQueries({ queryKey: ['reviews'] });
     },
   });
 }

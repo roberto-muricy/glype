@@ -1,6 +1,7 @@
 import { Text, View } from 'react-native';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/src/utils/cn';
+import { tokens } from '@/src/theme/tokens';
 
 const badgeVariants = cva('items-center justify-center rounded-md px-2 py-1', {
   variants: {
@@ -39,7 +40,10 @@ export interface ScoreBadgeProps extends VariantProps<typeof badgeVariants> {
 export function ScoreBadge({ score, variant, size, className }: ScoreBadgeProps) {
   return (
     <View className={cn(badgeVariants({ variant, size }), className)}>
-      <Text className={labelVariants({ variant, size })}>
+      <Text
+        className={labelVariants({ variant, size })}
+        style={{ fontFamily: tokens.fontFamily.monoMedium }}
+      >
         {score.toFixed(1)}
       </Text>
     </View>

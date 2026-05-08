@@ -40,10 +40,18 @@ export function ScoresAggregateBlock({ sources, className }: ScoresAggregateBloc
     >
       {/* Média */}
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
-        <Text className="text-display-1 text-text-primary">
+        <Text
+          className="text-display-1 text-text-primary"
+          style={{ fontFamily: tokens.fontFamily.monoMedium }}
+        >
           {avg.toFixed(1)}
         </Text>
-        <Text className="text-body text-text-secondary">/ 10</Text>
+        <Text
+          className="text-body text-text-secondary"
+          style={{ fontFamily: tokens.fontFamily.mono }}
+        >
+          / 10
+        </Text>
       </View>
       <Text className="text-section uppercase text-brand-muted" style={{ marginTop: 4 }}>
         Média agregada
@@ -57,7 +65,10 @@ export function ScoresAggregateBlock({ sources, className }: ScoresAggregateBloc
             <View key={s.source}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                 <Text className="text-body text-text-body">{s.source}</Text>
-                <Text className="text-body font-medium text-text-primary">
+                <Text
+                  className="text-body text-text-primary"
+                  style={{ fontFamily: tokens.fontFamily.monoMedium }}
+                >
                   {s.score} / {s.max}
                 </Text>
               </View>
