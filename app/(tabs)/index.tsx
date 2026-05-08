@@ -127,9 +127,12 @@ export default function HomeScreen() {
                     <Skeleton key={i} width="100%" height={120} className="rounded-xl" />
                   ))
                 : feed.data!.map((item) => (
-                    <FeedCard key={item.id} item={item} onGamePress={(rawgId) =>
-                      router.push(`/game/${rawgId}` as never)
-                    } />
+                    <FeedCard
+                      key={item.id}
+                      item={item}
+                      onGamePress={(rawgId) => router.push(`/game/${rawgId}` as never)}
+                      onUserPress={(userId) => router.push(`/profile/${userId}` as never)}
+                    />
                   ))}
             </View>
           </>
@@ -240,9 +243,11 @@ function ErrorRow({ onRetry }: { onRetry: () => void }) {
 function FeedCard({
   item,
   onGamePress,
+  onUserPress,
 }: {
   item: FeedItem;
   onGamePress: (rawgId: number) => void;
+  onUserPress: (userId: string) => void;
 }) {
   return (
     <View>
@@ -263,6 +268,7 @@ function FeedCard({
         user={{
           username: item.user.display_name ?? item.user.username,
           avatarUrl: item.user.avatar_url,
+          onPress: () => onUserPress(item.user.id),
         }}
         score={item.score}
         body={item.body}

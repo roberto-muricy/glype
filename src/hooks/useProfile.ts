@@ -1,9 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { updateProfile, getProfileStats, type ProfileUpdate } from '@/src/services/profile.service';
+import {
+  updateProfile,
+  getProfileStats,
+  getPublicProfile,
+  getUserPublicReviews,
+  type ProfileUpdate,
+} from '@/src/services/profile.service';
 import { useAuthStore } from '@/src/stores/auth';
 
 export const profileKeys = {
-  stats: (userId: string) => ['profile', 'stats', userId] as const,
+  stats:   (userId: string) => ['profile', 'stats', userId]   as const,
+  public:  (userId: string) => ['profile', 'public', userId]  as const,
+  reviews: (userId: string) => ['profile', 'reviews', userId] as const,
 };
 
 export function useProfileStats() {
@@ -14,6 +22,24 @@ export function useProfileStats() {
     queryFn: () => getProfileStats(user!.id),
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function usePublicProfile(userId: string | null) {
+  return useQuery({
+    queryKey: profileKeys.public(userId ?? ''),
+    queryFn: () => getPublicProfile(userId!),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useUserPublicReviews(userId: string | null) {
+  return useQuery({
+    queryKey: profileKeys.reviews(userId ?? ''),
+    queryFn: () => getUserPublicReviews(userId!),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 2,
   });
 }
 

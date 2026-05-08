@@ -17,6 +17,7 @@ export interface ReviewCardProps {
   user: {
     username: string;
     avatarUrl?: string | null;
+    onPress?: () => void;
   };
   game?: {
     title: string;
@@ -55,12 +56,19 @@ export function ReviewCard({
       )}
 
       <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center gap-2">
+        <Pressable
+          onPress={user.onPress}
+          disabled={!user.onPress}
+          className="flex-row items-center gap-2"
+          accessibilityRole={user.onPress ? 'button' : undefined}
+          accessibilityLabel={user.onPress ? `Ver perfil de ${user.username}` : undefined}
+          hitSlop={4}
+        >
           <Avatar name={user.username} uri={user.avatarUrl} size="sm" />
           <Text className="text-body font-medium text-text-primary">
             {user.username}
           </Text>
-        </View>
+        </Pressable>
         <ScoreBadge score={score} size="sm" />
       </View>
 

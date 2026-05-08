@@ -32,3 +32,6 @@ export const PlusIcon = make('add');
 export const StarIcon = make('star');
 export const StarHalfIcon = make('star-half');
 export const StarOutlineIcon = make('star-outline');
+export const ChevronLeftIcon = make('chevron-back');
+export const ChevronRightIcon = make('chevron-forward');
+export const EllipsisIcon = make('ellipsis-horizontal');

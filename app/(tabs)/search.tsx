@@ -195,13 +195,20 @@ function UserPill({
   profile: { id: string; username: string; display_name: string | null; avatar_url: string | null };
   currentUserId?: string;
 }) {
+  const router = useRouter();
   const isMe = profile.id === currentUserId;
   const { data: following } = useIsFollowing(isMe ? null : profile.id);
   const follow = useFollowUser();
   const unfollow = useUnfollowUser();
 
   return (
-    <View className="items-center gap-2" style={{ width: 80 }}>
+    <Pressable
+      onPress={() => router.push(`/profile/${profile.id}` as never)}
+      accessibilityRole="button"
+      accessibilityLabel={`Ver perfil de ${profile.display_name ?? profile.username}`}
+      className="items-center gap-2"
+      style={{ width: 80 }}
+    >
       <Avatar
         name={profile.display_name ?? profile.username}
         uri={profile.avatar_url}
@@ -215,14 +222,16 @@ function UserPill({
           label={following ? 'Seguindo' : 'Seguir'}
           size="sm"
           variant={following ? 'secondary' : 'primary'}
-          onPress={() =>
+          onPress={(e) => {
+            // impede que o Pressable pai navegue
+            e?.stopPropagation?.();
             following
               ? unfollow.mutate(profile.id)
-              : follow.mutate(profile.id)
-          }
+              : follow.mutate(profile.id);
+          }}
         />
       )}
-    </View>
+    </Pressable>
   );
 }
 

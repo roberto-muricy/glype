@@ -79,6 +79,7 @@ function AuthGate() {
       <Stack.Screen name="game/[rawgId]" options={{ presentation: 'modal' }} />
       <Stack.Screen name="review/pick-game" options={{ presentation: 'modal' }} />
       <Stack.Screen name="review/new" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="profile/[userId]" options={{ presentation: 'card' }} />
       <Stack.Screen name="profile/edit" options={{ presentation: 'modal' }} />
       <Stack.Screen name="dev/components" options={{ presentation: 'modal' }} />
       <Stack.Screen name="dev/data" options={{ presentation: 'modal' }} />
