@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "seed:games": "tsx scripts/seed-popular-games.ts",
-    "generate:icons": "node scripts/generate-icons.cjs"
+    "generate:icons": "node scripts/generate-icons.cjs",
+    "gen:types": "supabase gen types typescript --project-id faryowbibtszfnwawecs > src/types/database.types.ts"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

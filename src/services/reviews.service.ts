@@ -7,8 +7,6 @@ const SUPABASE_URL = (extra['supabaseUrl'] as string | undefined) ?? '';
 const SUPABASE_ANON_KEY = (extra['supabaseAnonKey'] as string | undefined) ?? '';
 
 // ─── ensure-game ─────────────────────────────────────────────────────────────
-// Garante que o jogo existe na tabela `games` e retorna o UUID interno.
-// A Edge Function usa service_role internamente (RLS bypassado).
 
 export async function ensureGame(rawgId: number): Promise<string> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -40,8 +38,7 @@ export async function createReview(gameId: string, draft: ReviewDraft): Promise<
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Não autenticado');
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('reviews')
     .insert({ ...draft, game_id: gameId, user_id: user.id })
     .select()
@@ -52,8 +49,7 @@ export async function createReview(gameId: string, draft: ReviewDraft): Promise<
 }
 
 export async function updateReview(reviewId: string, draft: Partial<ReviewDraft>): Promise<Review> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('reviews')
     .update(draft)
     .eq('id', reviewId)
@@ -73,7 +69,6 @@ export async function deleteReview(reviewId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-// Busca a review do usuário logado para um jogo específico (ou null se não existir)
 export async function getMyReview(gameId: string): Promise<Review | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -89,7 +84,6 @@ export async function getMyReview(gameId: string): Promise<Review | null> {
   return data as Review | null;
 }
 
-// Reviews públicas de um jogo (para a tela de detalhe)
 export async function getGameReviews(gameId: string): Promise<Review[]> {
   const { data, error } = await supabase
     .from('reviews')

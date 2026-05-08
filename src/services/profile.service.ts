@@ -1,9 +1,6 @@
 import { supabase } from '@/src/lib/supabase';
 import type { Profile } from '@/src/types/models';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = () => supabase as unknown as { from: (t: string) => any };
-
 export interface ProfileUpdate {
   display_name?: string | null;
   bio?: string | null;
@@ -15,14 +12,15 @@ export async function updateProfile(update: ProfileUpdate): Promise<Profile> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Não autenticado');
 
-  const { data, error } = await db().from('profiles')
+  const { data, error } = await supabase
+    .from('profiles')
     .update(update)
     .eq('id', user.id)
     .select()
     .single();
 
   if (error) throw new Error(error.message);
-  return data as Profile;
+  return data as unknown as Profile;
 }
 
 export async function getProfileStats(userId: string): Promise<{
@@ -30,8 +28,14 @@ export async function getProfileStats(userId: string): Promise<{
   gamesCount: number;
 }> {
   const [reviewsRes, gamesRes] = await Promise.all([
-    db().from('reviews').select('id', { count: 'exact', head: true }).eq('user_id', userId),
-    db().from('user_games').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+    supabase
+      .from('reviews')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId),
+    supabase
+      .from('user_games')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId),
   ]);
 
   return {
@@ -40,7 +44,7 @@ export async function getProfileStats(userId: string): Promise<{
   };
 }
 
-// ─── Public profile (outros usuários) ────────────────────────────────────────
+// ─── Public profile ───────────────────────────────────────────────────────────
 
 export async function getPublicProfile(userId: string): Promise<Profile> {
   const { data, error } = await supabase
@@ -73,7 +77,8 @@ export async function getUserPublicReviews(
   userId: string,
   limit = 20,
 ): Promise<ReviewWithGame[]> {
-  const { data, error } = await db().from('reviews')
+  const { data, error } = await supabase
+    .from('reviews')
     .select(`
       id, score, body, has_spoiler, completed, playtime_hours, created_at,
       game:games ( id, title, cover_url, rawg_id )
@@ -84,5 +89,5 @@ export async function getUserPublicReviews(
     .limit(limit);
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as ReviewWithGame[];
+  return (data ?? []) as unknown as ReviewWithGame[];
 }
