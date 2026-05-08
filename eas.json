@@ -36,13 +36,7 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "robertomuricy@gmail.com",
-        "ascAppId": "",
-        "appleTeamId": ""
-      },
-      "android": {
-        "serviceAccountKeyPath": "./google-service-account.json",
-        "track": "internal"
+        "appleId": "robertomuricy@gmail.com"
       }
     }
   }

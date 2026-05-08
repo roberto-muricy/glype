@@ -54,13 +54,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     policy: 'appVersion',
   },
   updates: {
-    url: 'https://u.expo.dev/placeholder-project-id',
+    url: 'https://u.expo.dev/76ed59a4-4e45-4b2a-b1ab-eb531696ff95',
   },
   extra: {
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
     eas: {
-      projectId: 'placeholder-project-id',
+      projectId: '76ed59a4-4e45-4b2a-b1ab-eb531696ff95',
     },
   },
 });
