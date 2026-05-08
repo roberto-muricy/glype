@@ -2,24 +2,26 @@ import type { ExpoConfig, ConfigContext } from 'expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: 'psn-review',
-  slug: 'psn-review',
+  name: 'Glype',
+  slug: 'glype',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
-  scheme: 'psnreview',
-  userInterfaceStyle: 'automatic',
+  scheme: 'glype',
+  userInterfaceStyle: 'dark',
   newArchEnabled: true,
   ios: {
     supportsTablet: true,
+    bundleIdentifier: 'com.glype.app',
   },
   android: {
     adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
+      backgroundColor: '#0066FF',
     },
+    package: 'com.glype.app',
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
   },
@@ -34,11 +36,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'expo-splash-screen',
       {
         image: './assets/images/splash-icon.png',
-        imageWidth: 200,
+        imageWidth: 160,
         resizeMode: 'contain',
-        backgroundColor: '#ffffff',
+        backgroundColor: '#0A0A0F',
         dark: {
-          backgroundColor: '#000000',
+          backgroundColor: '#0A0A0F',
         },
       },
     ],
