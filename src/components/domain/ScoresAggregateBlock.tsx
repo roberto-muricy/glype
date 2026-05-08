@@ -30,33 +30,53 @@ export function ScoresAggregateBlock({ sources, className }: ScoresAggregateBloc
       colors={[tokens.color.brand.dark, tokens.color.bg.elevated]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      className={cn('rounded-xl border border-border-accent p-5', className)}
+      style={{
+        borderRadius: tokens.radius.lg,
+        borderWidth: 1,
+        borderColor: tokens.color.border.accent,
+        padding: 20,
+      }}
+      className={cn(className)}
     >
-      <View className="flex-row items-baseline gap-2">
+      {/* Média */}
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
         <Text className="text-display-1 text-text-primary">
           {avg.toFixed(1)}
         </Text>
         <Text className="text-body text-text-secondary">/ 10</Text>
       </View>
-      <Text className="text-section uppercase text-brand-muted mt-1">
+      <Text className="text-section uppercase text-brand-muted" style={{ marginTop: 4 }}>
         Média agregada
       </Text>
 
-      <View className="mt-4 gap-3">
+      {/* Fontes individuais */}
+      <View style={{ marginTop: 16, gap: 12 }}>
         {sources.map((s) => {
           const pct = Math.max(0, Math.min(100, (s.score / s.max) * 100));
           return (
             <View key={s.source}>
-              <View className="flex-row items-center justify-between mb-1">
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                 <Text className="text-body text-text-body">{s.source}</Text>
                 <Text className="text-body font-medium text-text-primary">
                   {s.score} / {s.max}
                 </Text>
               </View>
-              <View className="h-1 w-full rounded-full bg-bg-surface overflow-hidden">
+              <View
+                style={{
+                  height: 4,
+                  width: '100%',
+                  borderRadius: 999,
+                  backgroundColor: tokens.color.bg.surface,
+                  overflow: 'hidden',
+                }}
+              >
                 <View
-                  className="h-full rounded-full bg-brand-primary"
-                  style={{ width: `${pct}%` }}
+                  style={{
+                    height: '100%',
+                    borderRadius: 999,
+                    backgroundColor: tokens.color.brand.primary,
+                    width: `${pct}%`,
+                  }}
                 />
               </View>
             </View>
