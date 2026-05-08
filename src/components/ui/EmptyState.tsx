@@ -1,8 +1,10 @@
 import { type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import { cn } from '@/src/utils/cn';
+import { GlypeMark } from './GlypeLogo';
 
 export interface EmptyStateProps {
+  /** Ícone customizado. Se omitido, usa o GlypeMark da marca. */
   icon?: ReactNode;
   title: string;
   subtitle?: string;
@@ -10,7 +12,7 @@ export interface EmptyStateProps {
   className?: string;
 }
 
-/** Bloco para listas vazias. Ícone redondo + título + subtítulo opcional. */
+/** Bloco para listas vazias. Usa GlypeMark por padrão como visual central. */
 export function EmptyState({ icon, title, subtitle, action, className }: EmptyStateProps) {
   return (
     <View
@@ -19,11 +21,9 @@ export function EmptyState({ icon, title, subtitle, action, className }: EmptySt
         className,
       )}
     >
-      {icon != null && (
-        <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-bg-elevated">
-          {icon}
-        </View>
-      )}
+      <View className="mb-5 h-16 w-16 items-center justify-center rounded-full bg-bg-elevated">
+        {icon ?? <GlypeMark size={32} tone="blue" />}
+      </View>
       <Text className="text-h2 text-text-primary text-center">{title}</Text>
       {subtitle != null && (
         <Text className="mt-2 text-body text-text-secondary text-center">

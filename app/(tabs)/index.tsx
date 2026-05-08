@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { SectionHeader, Skeleton, Button, Avatar } from '@/src/components/ui';
+import { EmptyState, SectionHeader, Skeleton, Button, Avatar } from '@/src/components/ui';
 import { GameCard, ReviewCard } from '@/src/components/domain';
 import { useTrendingGames, useRecommendations } from '@/src/hooks/useGames';
 import { useFeed } from '@/src/hooks/useFeed';
@@ -118,24 +118,37 @@ export default function HomeScreen() {
         )}
 
         {/* ─── Feed dos seguidos ─── */}
-        {(feed.data?.length ?? 0) > 0 && (
-          <>
-            <SectionHeader title="Seguindo" className="mt-4" />
-            <View className="px-5 gap-3">
-              {feed.isLoading
-                ? Array.from({ length: 2 }).map((_, i) => (
-                    <Skeleton key={i} width="100%" height={120} className="rounded-xl" />
-                  ))
-                : feed.data!.map((item) => (
-                    <FeedCard
-                      key={item.id}
-                      item={item}
-                      onGamePress={(rawgId) => router.push(`/game/${rawgId}` as never)}
-                      onUserPress={(userId) => router.push(`/profile/${userId}` as never)}
-                    />
-                  ))}
-            </View>
-          </>
+        <SectionHeader title="Seguindo" className="mt-4" />
+        {feed.isLoading ? (
+          <View className="px-5 gap-3">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Skeleton key={i} width="100%" height={120} className="rounded-xl" />
+            ))}
+          </View>
+        ) : (feed.data?.length ?? 0) === 0 ? (
+          <EmptyState
+            title="Nenhuma review ainda"
+            subtitle="Siga outros jogadores na busca para ver as reviews deles aqui."
+            action={
+              <Button
+                label="Buscar jogadores"
+                size="sm"
+                variant="secondary"
+                onPress={() => router.push('/(tabs)/search' as never)}
+              />
+            }
+          />
+        ) : (
+          <View className="px-5 gap-3">
+            {feed.data!.map((item) => (
+              <FeedCard
+                key={item.id}
+                item={item}
+                onGamePress={(rawgId) => router.push(`/game/${rawgId}` as never)}
+                onUserPress={(userId) => router.push(`/profile/${userId}` as never)}
+              />
+            ))}
+          </View>
         )}
 
         {/* Dica de personalização se sem gêneros favoritos */}

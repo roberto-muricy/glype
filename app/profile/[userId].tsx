@@ -1,15 +1,16 @@
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActionSheetIOS, Alert, ActivityIndicator, Image, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Avatar, Button, Pill, SectionHeader } from '@/src/components/ui';
+import { Avatar, Button, GlypeMark, Pill, SectionHeader } from '@/src/components/ui';
 import { ScoreBadge } from '@/src/components/domain';
 import { usePublicProfile, useUserPublicReviews } from '@/src/hooks/useProfile';
 import { useFollowCounts, useIsFollowing, useFollowUser, useUnfollowUser } from '@/src/hooks/useFeed';
 import { useProfileStats } from '@/src/hooks/useProfile';
+import { useDeleteReview } from '@/src/hooks/useReviews';
 import { useAuthStore } from '@/src/stores/auth';
 import { tokens } from '@/src/theme/tokens';
-import { ChevronLeftIcon } from '@/src/components/ui/icons';
+import { ChevronLeftIcon, EllipsisIcon } from '@/src/components/ui/icons';
 import type { ReviewWithGame } from '@/src/services/profile.service';
 
 export default function PublicProfileScreen() {
@@ -25,6 +26,7 @@ export default function PublicProfileScreen() {
   const { data: isFollowing } = useIsFollowing(isMe ? null : (userId ?? null));
   const follow = useFollowUser();
   const unfollow = useUnfollowUser();
+  const deleteReview = useDeleteReview();
 
   // Para o perfil do usuário logado, usa o store (já carregado) e busca stats normalmente
   const ownProfile = useAuthStore((s) => s.profile);
@@ -147,15 +149,27 @@ export default function PublicProfileScreen() {
           </>
         )}
 
-        {/* ─── Reviews públicas ─── */}
+        {/* ─── Reviews ─── */}
         <SectionHeader title="Reviews" />
         {reviewsLoading ? (
           <View className="items-center py-8">
             <ActivityIndicator color={tokens.color.brand.primary} />
           </View>
         ) : (reviews?.length ?? 0) === 0 ? (
-          <View className="items-center py-8 gap-2">
-            <Text className="text-body text-text-tertiary">Nenhuma review pública ainda</Text>
+          <View className="items-center py-12 gap-4">
+            <GlypeMark size={40} tone="blue" />
+            <Text className="text-body-lg text-text-secondary text-center px-8">
+              {isMe
+                ? 'Você ainda não escreveu nenhuma review.\nToque em + para começar.'
+                : 'Nenhuma review pública ainda.'}
+            </Text>
+            {isMe && (
+              <Button
+                label="Escrever review"
+                size="sm"
+                onPress={() => router.push('/review/pick-game' as never)}
+              />
+            )}
           </View>
         ) : (
           <View className="px-5 gap-3">
@@ -163,9 +177,34 @@ export default function PublicProfileScreen() {
               <ReviewCard
                 key={review.id}
                 review={review}
+                isOwner={isMe}
                 onGamePress={() => {
                   if (review.game.rawg_id != null) {
                     router.push(`/game/${review.game.rawg_id}` as never);
+                  }
+                }}
+                onEdit={() => {
+                  router.push(
+                    `/review/new?rawgId=${review.game.rawg_id}&reviewId=${review.id}&initialScore=${review.score}&initialBody=${encodeURIComponent(review.body)}&initialPlaytime=${review.playtime_hours ?? ''}&initialCompleted=${review.completed}&initialSpoiler=${review.has_spoiler}&initialPublic=true` as never,
+                  );
+                }}
+                onDelete={() => {
+                  const doDelete = () =>
+                    deleteReview.mutate(
+                      { reviewId: review.id },
+                      { onError: (e) => Alert.alert('Erro', e instanceof Error ? e.message : 'Erro ao excluir') },
+                    );
+
+                  if (Platform.OS === 'ios') {
+                    ActionSheetIOS.showActionSheetWithOptions(
+                      { options: ['Cancelar', 'Excluir review'], destructiveButtonIndex: 1, cancelButtonIndex: 0 },
+                      (i) => { if (i === 1) doDelete(); },
+                    );
+                  } else {
+                    Alert.alert('Excluir review', 'Tem certeza? Essa ação não pode ser desfeita.', [
+                      { text: 'Cancelar', style: 'cancel' },
+                      { text: 'Excluir', style: 'destructive', onPress: doDelete },
+                    ]);
                   }
                 }}
               />
@@ -181,10 +220,16 @@ export default function PublicProfileScreen() {
 
 function ReviewCard({
   review,
+  isOwner = false,
   onGamePress,
+  onEdit,
+  onDelete,
 }: {
   review: ReviewWithGame;
+  isOwner?: boolean;
   onGamePress: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }) {
   const MAX_BODY = 160;
   const bodyTruncated = review.body.length > MAX_BODY
@@ -232,6 +277,40 @@ function ReviewCard({
             )}
           </View>
         </View>
+
+        {/* ⋯ menu — só para o dono */}
+        {isOwner && (
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation?.();
+              if (Platform.OS === 'ios') {
+                ActionSheetIOS.showActionSheetWithOptions(
+                  {
+                    options: ['Cancelar', 'Editar review', 'Excluir review'],
+                    destructiveButtonIndex: 2,
+                    cancelButtonIndex: 0,
+                  },
+                  (i) => {
+                    if (i === 1) onEdit?.();
+                    if (i === 2) onDelete?.();
+                  },
+                );
+              } else {
+                Alert.alert('Review', review.game.title, [
+                  { text: 'Editar', onPress: onEdit },
+                  { text: 'Excluir', style: 'destructive', onPress: onDelete },
+                  { text: 'Cancelar', style: 'cancel' },
+                ]);
+              }
+            }}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Opções da review"
+            className="p-1"
+          >
+            <EllipsisIcon size={18} color={tokens.color.text.secondary} />
+          </Pressable>
+        )}
       </View>
 
       {/* Review body */}
