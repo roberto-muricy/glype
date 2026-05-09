@@ -8,6 +8,7 @@ import {
   View,
   type ListRenderItem,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Input, SectionHeader, Skeleton, EmptyState, Avatar, Button } from '@/src/components/ui';
@@ -82,8 +83,11 @@ export default function SearchScreen() {
   }, []);
 
   const renderGame: ListRenderItem<Game> = useCallback(
-    ({ item }) => (
-      <View style={{ flex: 1, maxWidth: '50%', padding: 6 }}>
+    ({ item, index }) => (
+      <Animated.View
+        style={{ flex: 1, maxWidth: '50%', padding: 6 }}
+        entering={FadeInDown.delay(index * 40).duration(300).springify()}
+      >
         <GameCard
           title={item.title}
           genre={item.genres[0]}
@@ -97,7 +101,7 @@ export default function SearchScreen() {
           className="w-full"
           onPress={() => handleGamePress(item)}
         />
-      </View>
+      </Animated.View>
     ),
     [handleGamePress],
   );

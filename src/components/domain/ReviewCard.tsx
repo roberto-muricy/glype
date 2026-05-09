@@ -1,11 +1,15 @@
 import { Pressable, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring } from 'react-native-reanimated';
 import { cn } from '@/src/utils/cn';
 import { tokens } from '@/src/theme/tokens';
+import { hapticLight } from '@/src/utils/haptics';
 import { Avatar } from '../ui/Avatar';
 import { Tag } from '../ui/Tag';
 import { Card } from '../ui/Card';
 import { HeartIcon, HeartOutlineIcon } from '../ui/icons';
 import { ScoreBadge } from './ScoreBadge';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export interface ReviewCardTag {
   label: string;
@@ -46,6 +50,17 @@ export function ReviewCard({
 }: ReviewCardProps) {
   const HeartComponent = liked ? HeartIcon : HeartOutlineIcon;
   const heartColor = liked ? tokens.color.semantic.danger : tokens.color.text.secondary;
+  const heartScale = useSharedValue(1);
+  const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: heartScale.value }] }));
+
+  const handleLikePress = () => {
+    hapticLight();
+    heartScale.value = withSequence(
+      withSpring(1.4, { damping: 6, stiffness: 400 }),
+      withSpring(1, { damping: 10, stiffness: 300 }),
+    );
+    onLikePress?.();
+  };
 
   return (
     <Card variant="default" padding="md" className={cn(className)}>
@@ -88,19 +103,19 @@ export function ReviewCard({
       )}
 
       <View className="flex-row items-center justify-end mt-3">
-        <Pressable
-          onPress={onLikePress}
+        <AnimatedPressable
+          onPress={handleLikePress}
           accessibilityRole="button"
           accessibilityLabel={liked ? 'Descurtir review' : 'Curtir review'}
           accessibilityState={{ selected: liked }}
           hitSlop={8}
           className="flex-row items-center gap-1.5"
         >
-          <HeartComponent size={16} color={heartColor} />
-          <Text className="text-caption text-text-secondary">
-            {likesCount}
-          </Text>
-        </Pressable>
+          <Animated.View style={heartStyle}>
+            <HeartComponent size={16} color={heartColor} />
+          </Animated.View>
+          <Text className="text-caption text-text-secondary">{likesCount}</Text>
+        </AnimatedPressable>
       </View>
     </Card>
   );

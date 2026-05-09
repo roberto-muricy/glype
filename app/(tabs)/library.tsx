@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { EmptyState, Skeleton } from '@/src/components/ui';
 import { GameCard } from '@/src/components/domain';
 import { useMyLibrary, useSetGameStatus, useRemoveFromLibrary } from '@/src/hooks/useLibrary';
+import { hapticMedium, hapticHeavy } from '@/src/utils/haptics';
 import { GAME_STATUS_LABEL, type GameStatus, type UserGame } from '@/src/types/models';
 import { tokens } from '@/src/theme/tokens';
 import { LibraryIcon, SearchIcon } from '@/src/components/ui/icons';
@@ -83,6 +84,7 @@ export default function LibraryScreen() {
   }, [allGames, filter, query, sort]);
 
   const handleLongPress = useCallback((item: UserGame) => {
+    hapticMedium();
     const statusOptions = STATUS_LIST.filter((s) => s !== item.status).map(
       (s) => GAME_STATUS_LABEL[s],
     );
@@ -99,6 +101,7 @@ export default function LibraryScreen() {
         (idx) => {
           if (idx === 0) return;
           if (idx === options.length - 1) {
+            hapticHeavy();
             removeGame.mutate(item.game_id);
             return;
           }

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   RefreshControl,
   ScrollView,
@@ -7,15 +7,17 @@ import {
   Pressable,
   type ViewStyle,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { EmptyState, SectionHeader, Skeleton, Button, Avatar } from '@/src/components/ui';
+import { EmptyState, SectionHeader, Skeleton, Button, Avatar, Toast } from '@/src/components/ui';
 import { GameCard, ReviewCard } from '@/src/components/domain';
 import { useTrendingGames, useRecommendations } from '@/src/hooks/useGames';
 import { useFeed } from '@/src/hooks/useFeed';
 import { useBatchLikes, useLikeReview, useUnlikeReview } from '@/src/hooks/useLikes';
 import { useAuthStore } from '@/src/stores/auth';
 import { tokens } from '@/src/theme/tokens';
+import { hapticLight } from '@/src/utils/haptics';
 import type { FeedItem, Game } from '@/src/types/models';
 
 export default function HomeScreen() {
@@ -28,18 +30,36 @@ export default function HomeScreen() {
   const feed = useFeed(15);
 
   const isRefreshing = trending.isFetching || recommendations.isFetching || feed.isFetching;
+  const [showRefreshedToast, setShowRefreshedToast] = useState(false);
+  const wasRefreshing = useRef(false);
 
   const onRefresh = useCallback(() => {
+    hapticLight();
+    wasRefreshing.current = true;
     trending.refetch();
     recommendations.refetch();
     feed.refetch();
   }, [trending, recommendations, feed]);
+
+  // Show toast when refresh completes
+  if (wasRefreshing.current && !isRefreshing) {
+    wasRefreshing.current = false;
+    if (!showRefreshedToast) {
+      setShowRefreshedToast(true);
+      setTimeout(() => setShowRefreshedToast(false), 2000);
+    }
+  }
 
   const greeting = getGreeting();
   const firstName = profile?.display_name?.split(' ')[0] ?? profile?.username ?? '';
 
   return (
     <SafeAreaView className="flex-1 bg-bg-primary" edges={['top']}>
+      {showRefreshedToast && (
+        <View style={{ position: 'absolute', top: 56, left: 20, right: 20, zIndex: 99 }}>
+          <Toast variant="success" title="Feed atualizado" />
+        </View>
+      )}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}
@@ -268,11 +288,14 @@ function FeedList({
 
   return (
     <View className="px-5 gap-3">
-      {items.map((item) => {
+      {items.map((item, index) => {
         const likeData = likesMap?.[item.id];
         return (
-          <FeedCard
+          <Animated.View
             key={item.id}
+            entering={FadeInDown.delay(index * 60).duration(350).springify()}
+          >
+          <FeedCard
             item={item}
             liked={likeData?.liked ?? false}
             likesCount={likeData?.count ?? 0}
@@ -285,6 +308,7 @@ function FeedList({
                 : like.mutate({ reviewId: item.id })
             }
           />
+          </Animated.View>
         );
       })}
     </View>

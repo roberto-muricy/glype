@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { hapticMedium } from '@/src/utils/haptics';
 import {
   getFeed,
   followUser,
@@ -51,9 +52,11 @@ export function useFollowUser() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (targetId: string) => followUser(targetId),
+    onMutate: () => hapticMedium(),
     onSuccess: (_, targetId) => {
       queryClient.invalidateQueries({ queryKey: feedKeys.following(targetId) });
       queryClient.invalidateQueries({ queryKey: feedKeys.feed });
+      queryClient.invalidateQueries({ queryKey: feedKeys.followCounts(targetId) });
     },
   });
 }
@@ -62,9 +65,11 @@ export function useUnfollowUser() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (targetId: string) => unfollowUser(targetId),
+    onMutate: () => hapticMedium(),
     onSuccess: (_, targetId) => {
       queryClient.invalidateQueries({ queryKey: feedKeys.following(targetId) });
       queryClient.invalidateQueries({ queryKey: feedKeys.feed });
+      queryClient.invalidateQueries({ queryKey: feedKeys.followCounts(targetId) });
     },
   });
 }
