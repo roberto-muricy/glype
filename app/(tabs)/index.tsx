@@ -144,6 +144,7 @@ export default function HomeScreen() {
             items={feed.data!}
             onGamePress={(rawgId) => router.push(`/game/${rawgId}` as never)}
             onUserPress={(userId) => router.push(`/profile/${userId}` as never)}
+            onReviewPress={(reviewId) => router.push(`/review/${reviewId}` as never)}
           />
         )}
 
@@ -253,10 +254,12 @@ function FeedList({
   items,
   onGamePress,
   onUserPress,
+  onReviewPress,
 }: {
   items: FeedItem[];
   onGamePress: (rawgId: number) => void;
   onUserPress: (userId: string) => void;
+  onReviewPress: (reviewId: string) => void;
 }) {
   const reviewIds = items.map((i) => i.id);
   const { data: likesMap } = useBatchLikes(reviewIds);
@@ -275,6 +278,7 @@ function FeedList({
             likesCount={likeData?.count ?? 0}
             onGamePress={onGamePress}
             onUserPress={onUserPress}
+            onReviewPress={onReviewPress}
             onLikePress={() =>
               likeData?.liked
                 ? unlike.mutate({ reviewId: item.id })
@@ -295,6 +299,7 @@ function FeedCard({
   likesCount,
   onGamePress,
   onUserPress,
+  onReviewPress,
   onLikePress,
 }: {
   item: FeedItem;
@@ -302,6 +307,7 @@ function FeedCard({
   likesCount: number;
   onGamePress: (rawgId: number) => void;
   onUserPress: (userId: string) => void;
+  onReviewPress: (reviewId: string) => void;
   onLikePress: () => void;
 }) {
   return (
@@ -318,6 +324,7 @@ function FeedCard({
           </Text>
         </Pressable>
       )}
+      <Pressable onPress={() => onReviewPress(item.id)} accessibilityRole="button">
       <ReviewCard
         variant="compact"
         user={{
@@ -336,6 +343,7 @@ function FeedCard({
           ...(item.playtime_hours ? [{ label: `${item.playtime_hours}h`, variant: 'neutral' as const }] : []),
         ]}
       />
+      </Pressable>
     </View>
   );
 }

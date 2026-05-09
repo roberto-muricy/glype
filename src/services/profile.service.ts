@@ -73,6 +73,39 @@ export interface ReviewWithGame {
   };
 }
 
+export interface ReviewDetail extends ReviewWithGame {
+  user: {
+    id: string;
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  };
+  game: {
+    id: string;
+    title: string;
+    cover_url: string | null;
+    background_url: string | null;
+    rawg_id: number | null;
+    genres: string[];
+    release_date: string | null;
+  };
+}
+
+export async function getReviewDetail(reviewId: string): Promise<ReviewDetail | null> {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select(`
+      id, score, body, has_spoiler, completed, playtime_hours, created_at,
+      user:profiles ( id, username, display_name, avatar_url ),
+      game:games ( id, title, cover_url, background_url, rawg_id, genres, release_date )
+    `)
+    .eq('id', reviewId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data as unknown as ReviewDetail | null;
+}
+
 export async function getUserPublicReviews(
   userId: string,
   limit = 20,

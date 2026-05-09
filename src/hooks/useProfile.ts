@@ -4,14 +4,16 @@ import {
   getProfileStats,
   getPublicProfile,
   getUserPublicReviews,
+  getReviewDetail,
   type ProfileUpdate,
 } from '@/src/services/profile.service';
 import { useAuthStore } from '@/src/stores/auth';
 
 export const profileKeys = {
-  stats:   (userId: string) => ['profile', 'stats', userId]   as const,
-  public:  (userId: string) => ['profile', 'public', userId]  as const,
-  reviews: (userId: string) => ['profile', 'reviews', userId] as const,
+  stats:        (userId: string)   => ['profile', 'stats', userId]    as const,
+  public:       (userId: string)   => ['profile', 'public', userId]   as const,
+  reviews:      (userId: string)   => ['profile', 'reviews', userId]  as const,
+  reviewDetail: (reviewId: string) => ['profile', 'review', reviewId] as const,
 };
 
 export function useProfileStats() {
@@ -40,6 +42,15 @@ export function useUserPublicReviews(userId: string | null) {
     queryFn: () => getUserPublicReviews(userId!),
     enabled: !!userId,
     staleTime: 1000 * 60 * 2,
+  });
+}
+
+export function useReviewDetail(reviewId: string | null) {
+  return useQuery({
+    queryKey: profileKeys.reviewDetail(reviewId ?? ''),
+    queryFn: () => getReviewDetail(reviewId!),
+    enabled: !!reviewId,
+    staleTime: 1000 * 60 * 5,
   });
 }
 

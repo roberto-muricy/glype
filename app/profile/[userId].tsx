@@ -202,11 +202,7 @@ export default function PublicProfileScreen() {
                     ? unlike.mutate({ reviewId: review.id })
                     : like.mutate({ reviewId: review.id })
                 }
-                onGamePress={() => {
-                  if (review.game.rawg_id != null) {
-                    router.push(`/game/${review.game.rawg_id}` as never);
-                  }
-                }}
+                onGamePress={() => router.push(`/review/${review.id}` as never)}
                 onEdit={() => {
                   router.push(
                     `/review/new?rawgId=${review.game.rawg_id}&reviewId=${review.id}&initialScore=${review.score}&initialBody=${encodeURIComponent(review.body)}&initialPlaytime=${review.playtime_hours ?? ''}&initialCompleted=${review.completed}&initialSpoiler=${review.has_spoiler}&initialPublic=true` as never,
