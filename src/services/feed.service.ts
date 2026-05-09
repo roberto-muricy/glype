@@ -89,6 +89,34 @@ export async function getFollowCounts(userId: string): Promise<FollowCounts> {
   };
 }
 
+export async function getFollowers(userId: string, limit = 50) {
+  const { data, error } = await supabase
+    .from('follows')
+    .select('follower:profiles!follower_id ( id, username, display_name, avatar_url )')
+    .eq('following_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => r.follower).filter(Boolean) as {
+    id: string; username: string; display_name: string | null; avatar_url: string | null;
+  }[];
+}
+
+export async function getFollowing(userId: string, limit = 50) {
+  const { data, error } = await supabase
+    .from('follows')
+    .select('following:profiles!following_id ( id, username, display_name, avatar_url )')
+    .eq('follower_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => r.following).filter(Boolean) as {
+    id: string; username: string; display_name: string | null; avatar_url: string | null;
+  }[];
+}
+
 export async function searchProfiles(query: string, limit = 10) {
   const { data, error } = await supabase
     .from('profiles')

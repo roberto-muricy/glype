@@ -5,6 +5,8 @@ import {
   unfollowUser,
   isFollowing,
   getFollowCounts,
+  getFollowers,
+  getFollowing,
   searchProfiles,
 } from '@/src/services/feed.service';
 
@@ -12,6 +14,8 @@ export const feedKeys = {
   feed: ['feed'] as const,
   following: (targetId: string) => ['feed', 'following', targetId] as const,
   followCounts: (userId: string) => ['feed', 'counts', userId] as const,
+  followers: (userId: string) => ['feed', 'followers', userId] as const,
+  followingList: (userId: string) => ['feed', 'followingList', userId] as const,
   profileSearch: (query: string) => ['feed', 'profileSearch', query] as const,
 };
 
@@ -60,6 +64,24 @@ export function useUnfollowUser() {
       queryClient.invalidateQueries({ queryKey: feedKeys.following(targetId) });
       queryClient.invalidateQueries({ queryKey: feedKeys.feed });
     },
+  });
+}
+
+export function useFollowers(userId: string | null) {
+  return useQuery({
+    queryKey: feedKeys.followers(userId ?? ''),
+    queryFn: () => getFollowers(userId!),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
+export function useFollowingList(userId: string | null) {
+  return useQuery({
+    queryKey: feedKeys.followingList(userId ?? ''),
+    queryFn: () => getFollowing(userId!),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 2,
   });
 }
 

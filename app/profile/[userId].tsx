@@ -104,14 +104,24 @@ export default function PublicProfileScreen() {
           {/* Follow/Following counts */}
           {counts != null && (
             <View className="flex-row gap-6 mt-1">
-              <View className="items-center">
+              <Pressable
+                onPress={() => router.push(`/profile/followers?userId=${userId}&tab=followers` as never)}
+                accessibilityRole="button"
+                accessibilityLabel={`${counts.followers} seguidores`}
+                className="items-center"
+              >
                 <Text className="text-body-lg font-medium text-text-primary">{counts.followers}</Text>
                 <Text className="text-caption text-text-secondary">seguidores</Text>
-              </View>
-              <View className="items-center">
+              </Pressable>
+              <Pressable
+                onPress={() => router.push(`/profile/followers?userId=${userId}&tab=following` as never)}
+                accessibilityRole="button"
+                accessibilityLabel={`${counts.following} seguindo`}
+                className="items-center"
+              >
                 <Text className="text-body-lg font-medium text-text-primary">{counts.following}</Text>
                 <Text className="text-caption text-text-secondary">seguindo</Text>
-              </View>
+              </Pressable>
             </View>
           )}
 
