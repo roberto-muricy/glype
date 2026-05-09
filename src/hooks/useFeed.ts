@@ -7,6 +7,7 @@ import {
   getFollowCounts,
   getFollowers,
   getFollowing,
+  getSuggestedUsers,
   searchProfiles,
 } from '@/src/services/feed.service';
 
@@ -16,6 +17,7 @@ export const feedKeys = {
   followCounts: (userId: string) => ['feed', 'counts', userId] as const,
   followers: (userId: string) => ['feed', 'followers', userId] as const,
   followingList: (userId: string) => ['feed', 'followingList', userId] as const,
+  suggestedUsers: ['feed', 'suggested'] as const,
   profileSearch: (query: string) => ['feed', 'profileSearch', query] as const,
 };
 
@@ -82,6 +84,14 @@ export function useFollowingList(userId: string | null) {
     queryFn: () => getFollowing(userId!),
     enabled: !!userId,
     staleTime: 1000 * 60 * 2,
+  });
+}
+
+export function useSuggestedUsers() {
+  return useQuery({
+    queryKey: feedKeys.suggestedUsers,
+    queryFn: () => getSuggestedUsers(12),
+    staleTime: 1000 * 60 * 10,
   });
 }
 

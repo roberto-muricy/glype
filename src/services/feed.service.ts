@@ -117,6 +117,23 @@ export async function getFollowing(userId: string, limit = 50) {
   }[];
 }
 
+export async function getSuggestedUsers(limit = 12): Promise<{
+  id: string; username: string; display_name: string | null; avatar_url: string | null; favorite_genres: string[];
+}[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, username, display_name, avatar_url, favorite_genres')
+    .neq('id', user?.id ?? '')
+    .not('favorite_genres', 'eq', '{}')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((u) => ({ ...u, favorite_genres: u.favorite_genres ?? [] }));
+}
+
 export async function searchProfiles(query: string, limit = 10) {
   const { data, error } = await supabase
     .from('profiles')
