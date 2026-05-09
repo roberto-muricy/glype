@@ -13,6 +13,7 @@ import { EmptyState, SectionHeader, Skeleton, Button, Avatar } from '@/src/compo
 import { GameCard, ReviewCard } from '@/src/components/domain';
 import { useTrendingGames, useRecommendations } from '@/src/hooks/useGames';
 import { useFeed } from '@/src/hooks/useFeed';
+import { useBatchLikes, useLikeReview, useUnlikeReview } from '@/src/hooks/useLikes';
 import { useAuthStore } from '@/src/stores/auth';
 import { tokens } from '@/src/theme/tokens';
 import type { FeedItem, Game } from '@/src/types/models';
@@ -139,16 +140,11 @@ export default function HomeScreen() {
             }
           />
         ) : (
-          <View className="px-5 gap-3">
-            {feed.data!.map((item) => (
-              <FeedCard
-                key={item.id}
-                item={item}
-                onGamePress={(rawgId) => router.push(`/game/${rawgId}` as never)}
-                onUserPress={(userId) => router.push(`/profile/${userId}` as never)}
-              />
-            ))}
-          </View>
+          <FeedList
+            items={feed.data!}
+            onGamePress={(rawgId) => router.push(`/game/${rawgId}` as never)}
+            onUserPress={(userId) => router.push(`/profile/${userId}` as never)}
+          />
         )}
 
         {/* Dica de personalização se sem gêneros favoritos */}
@@ -251,16 +247,62 @@ function ErrorRow({ onRetry }: { onRetry: () => void }) {
   );
 }
 
+// ─── FeedList ────────────────────────────────────────────────────────────────
+
+function FeedList({
+  items,
+  onGamePress,
+  onUserPress,
+}: {
+  items: FeedItem[];
+  onGamePress: (rawgId: number) => void;
+  onUserPress: (userId: string) => void;
+}) {
+  const reviewIds = items.map((i) => i.id);
+  const { data: likesMap } = useBatchLikes(reviewIds);
+  const like = useLikeReview();
+  const unlike = useUnlikeReview();
+
+  return (
+    <View className="px-5 gap-3">
+      {items.map((item) => {
+        const likeData = likesMap?.[item.id];
+        return (
+          <FeedCard
+            key={item.id}
+            item={item}
+            liked={likeData?.liked ?? false}
+            likesCount={likeData?.count ?? 0}
+            onGamePress={onGamePress}
+            onUserPress={onUserPress}
+            onLikePress={() =>
+              likeData?.liked
+                ? unlike.mutate({ reviewId: item.id })
+                : like.mutate({ reviewId: item.id })
+            }
+          />
+        );
+      })}
+    </View>
+  );
+}
+
 // ─── FeedCard ────────────────────────────────────────────────────────────────
 
 function FeedCard({
   item,
+  liked,
+  likesCount,
   onGamePress,
   onUserPress,
+  onLikePress,
 }: {
   item: FeedItem;
+  liked: boolean;
+  likesCount: number;
   onGamePress: (rawgId: number) => void;
   onUserPress: (userId: string) => void;
+  onLikePress: () => void;
 }) {
   return (
     <View>
@@ -285,6 +327,9 @@ function FeedCard({
         }}
         score={item.score}
         body={item.body}
+        liked={liked}
+        likesCount={likesCount}
+        onLikePress={onLikePress}
         tags={[
           ...(item.completed ? [{ label: 'Completou', variant: 'success' as const }] : []),
           ...(item.has_spoiler ? [{ label: 'Spoiler', variant: 'danger' as const }] : []),

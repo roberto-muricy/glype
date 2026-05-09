@@ -8,9 +8,10 @@ import { usePublicProfile, useUserPublicReviews } from '@/src/hooks/useProfile';
 import { useFollowCounts, useIsFollowing, useFollowUser, useUnfollowUser } from '@/src/hooks/useFeed';
 import { useProfileStats } from '@/src/hooks/useProfile';
 import { useDeleteReview } from '@/src/hooks/useReviews';
+import { useBatchLikes, useLikeReview, useUnlikeReview } from '@/src/hooks/useLikes';
 import { useAuthStore } from '@/src/stores/auth';
 import { tokens } from '@/src/theme/tokens';
-import { ChevronLeftIcon, EllipsisIcon } from '@/src/components/ui/icons';
+import { ChevronLeftIcon, EllipsisIcon, HeartIcon, HeartOutlineIcon } from '@/src/components/ui/icons';
 import type { ReviewWithGame } from '@/src/services/profile.service';
 
 export default function PublicProfileScreen() {
@@ -27,6 +28,10 @@ export default function PublicProfileScreen() {
   const follow = useFollowUser();
   const unfollow = useUnfollowUser();
   const deleteReview = useDeleteReview();
+  const reviewIds = (reviews ?? []).map((r) => r.id);
+  const { data: likesMap } = useBatchLikes(reviewIds);
+  const like = useLikeReview();
+  const unlike = useUnlikeReview();
 
   // Para o perfil do usuário logado, usa o store (já carregado) e busca stats normalmente
   const ownProfile = useAuthStore((s) => s.profile);
@@ -183,11 +188,20 @@ export default function PublicProfileScreen() {
           </View>
         ) : (
           <View className="px-5 gap-3">
-            {reviews!.map((review) => (
+            {reviews!.map((review) => {
+              const likeData = likesMap?.[review.id];
+              return (
               <ReviewCard
                 key={review.id}
                 review={review}
                 isOwner={isMe}
+                liked={likeData?.liked ?? false}
+                likesCount={likeData?.count ?? 0}
+                onLikePress={() =>
+                  likeData?.liked
+                    ? unlike.mutate({ reviewId: review.id })
+                    : like.mutate({ reviewId: review.id })
+                }
                 onGamePress={() => {
                   if (review.game.rawg_id != null) {
                     router.push(`/game/${review.game.rawg_id}` as never);
@@ -218,7 +232,8 @@ export default function PublicProfileScreen() {
                   }
                 }}
               />
-            ))}
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -231,13 +246,19 @@ export default function PublicProfileScreen() {
 function ReviewCard({
   review,
   isOwner = false,
+  liked = false,
+  likesCount = 0,
   onGamePress,
+  onLikePress,
   onEdit,
   onDelete,
 }: {
   review: ReviewWithGame;
   isOwner?: boolean;
+  liked?: boolean;
+  likesCount?: number;
   onGamePress: () => void;
+  onLikePress?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
@@ -326,13 +347,28 @@ function ReviewCard({
       {/* Review body */}
       <View className="p-3">
         <Text className="text-body text-text-body leading-5">{bodyTruncated}</Text>
-        <Text className="text-caption text-text-tertiary mt-2">
-          {new Date(review.created_at).toLocaleDateString('pt-BR', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-          })}
-        </Text>
+        <View className="flex-row items-center justify-between mt-2">
+          <Text className="text-caption text-text-tertiary">
+            {new Date(review.created_at).toLocaleDateString('pt-BR', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })}
+          </Text>
+          <Pressable
+            onPress={(e) => { e.stopPropagation?.(); onLikePress?.(); }}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={liked ? 'Descurtir' : 'Curtir'}
+            className="flex-row items-center gap-1.5"
+          >
+            {liked
+              ? <HeartIcon size={15} color={tokens.color.semantic.danger} />
+              : <HeartOutlineIcon size={15} color={tokens.color.text.secondary} />
+            }
+            <Text className="text-caption text-text-secondary">{likesCount}</Text>
+          </Pressable>
+        </View>
       </View>
     </Pressable>
   );
