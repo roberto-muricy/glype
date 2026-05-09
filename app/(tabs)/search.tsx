@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Keyboard,
@@ -11,14 +11,17 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Input, SectionHeader, Skeleton, EmptyState, Avatar, Button } from '@/src/components/ui';
-import { GameCard, FilterTabs } from '@/src/components/domain';
+import { GameCard, FilterTabs, SearchFilters } from '@/src/components/domain';
 import { useSearchGames, useRecommendations } from '@/src/hooks/useGames';
 import { useProfileSearch, useFollowUser, useUnfollowUser, useIsFollowing } from '@/src/hooks/useFeed';
 import { useAuthStore } from '@/src/stores/auth';
 import { tokens } from '@/src/theme/tokens';
 import { useDebounce } from '@/src/hooks/useDebounce';
 import { SearchIcon } from '@/src/components/ui/icons';
+import { applyFilters } from '@/src/utils/filterGames';
+import { DEFAULT_FILTERS, hasActiveFilters } from '@/src/components/domain/SearchFilters';
 import type { Game } from '@/src/types/models';
+import type { SearchFiltersState } from '@/src/components/domain/SearchFilters';
 
 const GENRE_OPTIONS = [
   { value: 'action', label: 'Ação' },
@@ -35,15 +38,35 @@ export default function SearchScreen() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [genre, setGenre] = useState('action');
+  const [filters, setFilters] = useState<SearchFiltersState>(DEFAULT_FILTERS);
   const debouncedQuery = useDebounce(query, 400);
   const inputRef = useRef(null);
 
   const isSearching = debouncedQuery.trim().length >= 2;
 
-  const search = useSearchGames(debouncedQuery, 24);
+  const search = useSearchGames(debouncedQuery, 40);
   const profileSearch = useProfileSearch(debouncedQuery);
-  const discover = useRecommendations([genre], 20);
+  const discover = useRecommendations([genre], 40);
   const currentUser = useAuthStore((s) => s.user);
+
+  // Apply filters + sort to whichever list is active
+  const searchResults = useMemo(
+    () => applyFilters(search.data?.results ?? [], filters),
+    [search.data, filters],
+  );
+
+  const discoverResults = useMemo(
+    () => applyFilters(discover.data?.results ?? [], { ...filters, sort: 'relevance' }),
+    [discover.data, filters],
+  );
+
+  const activeFilterCount = useMemo(() => {
+    let n = 0;
+    if (filters.platform !== 'all') n++;
+    if (filters.score !== 'any') n++;
+    if (filters.sort !== 'relevance') n++;
+    return n;
+  }, [filters]);
 
   const handleGamePress = useCallback(
     (game: Game) => {
@@ -55,6 +78,7 @@ export default function SearchScreen() {
 
   const handleClear = useCallback(() => {
     setQuery('');
+    setFilters(DEFAULT_FILTERS);
   }, []);
 
   const renderGame: ListRenderItem<Game> = useCallback(
@@ -81,7 +105,7 @@ export default function SearchScreen() {
   return (
     <SafeAreaView className="flex-1 bg-bg-primary" edges={['top']}>
       {/* ─── Search bar ─── */}
-      <View className="px-5 pt-4 pb-3 flex-row items-center gap-3">
+      <View className="px-5 pt-4 pb-2 flex-row items-center gap-3">
         <View className="flex-1">
           <Input
             ref={inputRef}
@@ -102,6 +126,27 @@ export default function SearchScreen() {
             accessibilityLabel="Limpar busca"
           >
             <Text className="text-body text-brand-primary">Limpar</Text>
+          </Pressable>
+        )}
+      </View>
+
+      {/* ─── Filter bar (always visible) ─── */}
+      <View>
+        <SearchFilters
+          filters={filters}
+          onChange={setFilters}
+          showSort={isSearching}
+        />
+        {activeFilterCount > 0 && (
+          <Pressable
+            onPress={() => setFilters(DEFAULT_FILTERS)}
+            hitSlop={8}
+            accessibilityRole="button"
+            className="px-5 pb-1"
+          >
+            <Text className="text-caption text-brand-primary">
+              {activeFilterCount} filtro{activeFilterCount > 1 ? 's' : ''} ativo{activeFilterCount > 1 ? 's' : ''} · Limpar
+            </Text>
           </Pressable>
         )}
       </View>
@@ -129,7 +174,7 @@ export default function SearchScreen() {
       {isSearching ? (
         /* ─── Resultados da busca ─── */
         <FlatList
-          data={search.isLoading ? SKELETON_ITEMS : (search.data?.results ?? [])}
+          data={search.isLoading ? SKELETON_ITEMS : searchResults}
           keyExtractor={(item, i) =>
             search.isLoading ? String(i) : String(item.rawg_id ?? item.slug ?? i)
           }
@@ -144,7 +189,9 @@ export default function SearchScreen() {
                   ? 'Buscando…'
                   : search.isError
                     ? 'Erro ao buscar'
-                    : `${search.data?.count ?? 0} resultado${(search.data?.count ?? 0) !== 1 ? 's' : ''} para "${debouncedQuery}"`}
+                    : searchResults.length === 0 && hasActiveFilters(filters)
+                      ? `Nenhum resultado com os filtros ativos`
+                      : `${searchResults.length} resultado${searchResults.length !== 1 ? 's' : ''} para "${debouncedQuery}"`}
               </Text>
             </View>
           }
@@ -152,8 +199,22 @@ export default function SearchScreen() {
             !search.isLoading ? (
               <EmptyState
                 icon={<SearchIcon size={28} color={tokens.color.text.tertiary} />}
-                title="Nenhum resultado"
-                subtitle={`Não encontramos jogos para "${debouncedQuery}".`}
+                title={hasActiveFilters(filters) ? 'Sem resultados' : 'Nenhum resultado'}
+                subtitle={
+                  hasActiveFilters(filters)
+                    ? 'Tente remover alguns filtros.'
+                    : `Não encontramos jogos para "${debouncedQuery}".`
+                }
+                action={
+                  hasActiveFilters(filters) ? (
+                    <Button
+                      label="Limpar filtros"
+                      size="sm"
+                      variant="secondary"
+                      onPress={() => setFilters(DEFAULT_FILTERS)}
+                    />
+                  ) : undefined
+                }
               />
             ) : null
           }
@@ -161,7 +222,7 @@ export default function SearchScreen() {
       ) : (
         /* ─── Descobrir por gênero ─── */
         <FlatList
-          data={discover.isLoading ? SKELETON_ITEMS : (discover.data?.results ?? [])}
+          data={discover.isLoading ? SKELETON_ITEMS : discoverResults}
           keyExtractor={(item, i) =>
             discover.isLoading ? String(i) : String(item.rawg_id ?? item.slug ?? i)
           }
@@ -177,6 +238,16 @@ export default function SearchScreen() {
                 selected={genre}
                 onSelect={setGenre}
               />
+              {discoverResults.length === 0 && !discover.isLoading && hasActiveFilters(filters) && (
+                <View className="px-4 pt-3">
+                  <Text className="text-caption text-text-tertiary">
+                    Sem jogos neste gênero com os filtros ativos.{' '}
+                  </Text>
+                  <Pressable onPress={() => setFilters(DEFAULT_FILTERS)}>
+                    <Text className="text-caption text-brand-primary">Limpar filtros</Text>
+                  </Pressable>
+                </View>
+              )}
               <View className="h-3" />
             </>
           }
@@ -223,7 +294,6 @@ function UserPill({
           size="sm"
           variant={following ? 'secondary' : 'primary'}
           onPress={(e) => {
-            // impede que o Pressable pai navegue
             e?.stopPropagation?.();
             following
               ? unfollow.mutate(profile.id)

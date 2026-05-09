@@ -16,3 +16,5 @@ export type { ScoreSliderProps } from './ScoreSlider';
 export { FilterTabs } from './FilterTabs';
 export type { FilterTabsProps, FilterTabOption } from './FilterTabs';
 export { BottomTabBar } from './BottomTabBar';
+export { SearchFilters } from './SearchFilters';
+export type { SearchFiltersState, PlatformFilter, ScoreFilter, SortOrder } from './SearchFilters';
