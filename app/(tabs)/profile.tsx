@@ -5,6 +5,7 @@ import { Avatar, Button, Card, Pill, SectionHeader } from '@/src/components/ui';
 import { useAuth } from '@/src/hooks/useAuth';
 import { useProfileStats } from '@/src/hooks/useProfile';
 import { useMyLibrary } from '@/src/hooks/useLibrary';
+import { useFollowCounts } from '@/src/hooks/useFeed';
 import { GAME_STATUS_LABEL, type GameStatus } from '@/src/types/models';
 import { tokens } from '@/src/theme/tokens';
 
@@ -15,6 +16,7 @@ export default function ProfileScreen() {
   const { user, profile, signOut } = useAuth();
   const { data: stats } = useProfileStats();
   const { data: library } = useMyLibrary();
+  const { data: counts } = useFollowCounts(user?.id ?? null);
 
   const onSignOut = async () => {
     Alert.alert('Sair', 'Tem certeza que quer sair?', [
@@ -77,6 +79,28 @@ export default function ProfileScreen() {
               <Text className="text-caption text-text-tertiary">{profile.location}</Text>
             )}
           </View>
+
+          {/* Follow counts */}
+          {counts != null && (
+            <View className="flex-row gap-6 mt-1">
+              <Pressable
+                onPress={() => router.push(`/profile/followers?userId=${user?.id}&tab=followers` as never)}
+                accessibilityRole="button"
+                className="items-center"
+              >
+                <Text className="text-body-lg font-medium text-text-primary">{counts.followers}</Text>
+                <Text className="text-caption text-text-secondary">seguidores</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push(`/profile/followers?userId=${user?.id}&tab=following` as never)}
+                accessibilityRole="button"
+                className="items-center"
+              >
+                <Text className="text-body-lg font-medium text-text-primary">{counts.following}</Text>
+                <Text className="text-caption text-text-secondary">seguindo</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
 
         {/* ─── Stats ─── */}
