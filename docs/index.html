@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Glype — Reviews de jogos PlayStation</title>
+  <style>
+    :root {
+      --bg: #0A0A0F;
+      --surface: #15151D;
+      --border: #25252F;
+      --text: #FFFFFF;
+      --body: #E7E7EE;
+      --muted: #6B6B7A;
+      --brand: #0066FF;
+      --brand-light: #2A82FF;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--body);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    main {
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+    }
+    .logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, var(--brand-light), #0044CC);
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo svg { width: 50px; height: 50px; }
+    h1 {
+      font-size: 32px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0 0 8px;
+      letter-spacing: -0.02em;
+    }
+    p.lead {
+      font-size: 16px;
+      color: var(--muted);
+      margin: 0 0 32px;
+    }
+    .links {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    a.btn {
+      display: block;
+      padding: 14px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--body);
+      text-decoration: none;
+      font-size: 15px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    a.btn:hover {
+      border-color: var(--brand);
+      background: #1B1B26;
+    }
+    footer {
+      margin-top: 48px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="logo">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="38" stroke="#fff" stroke-width="6" fill="none"/>
+        <circle cx="61.3" cy="38.7" r="18" fill="#fff"/>
+      </svg>
+    </div>
+    <h1>Glype</h1>
+    <p class="lead">Reviews de jogos PlayStation</p>
+    <div class="links">
+      <a class="btn" href="./privacy.html">Política de Privacidade (PT-BR)</a>
+      <a class="btn" href="./privacy-en.html">Privacy Policy (EN)</a>
+      <a class="btn" href="./terms.html">Termos de Uso (PT-BR)</a>
+      <a class="btn" href="./support.html">Suporte / Support</a>
+    </div>
+    <footer>© 2026 Glype. Todos os direitos reservados.</footer>
+  </main>
+</body>
+</html>
