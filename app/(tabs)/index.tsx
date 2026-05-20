@@ -11,9 +11,13 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { EmptyState, SectionHeader, Skeleton, Button, Avatar, Toast } from '@/src/components/ui';
-import { GameCard, ReviewCard } from '@/src/components/domain';
-import { useTrendingGames, useRecommendations } from '@/src/hooks/useGames';
+import { GameCard, ReviewCard, CollectionCard } from '@/src/components/domain';
+import { useTrendingGames, useRecommendations, useCollection } from '@/src/hooks/useGames';
+import { COLLECTIONS } from '@/src/config/collections';
+import type { CollectionDef } from '@/src/config/collections';
 import { useFeed } from '@/src/hooks/useFeed';
+import { useUnreadCount } from '@/src/hooks/useNotifications';
+import { BellIcon } from '@/src/components/ui/icons';
 import { useBatchLikes, useLikeReview, useUnlikeReview } from '@/src/hooks/useLikes';
 import { useAuthStore } from '@/src/stores/auth';
 import { tokens } from '@/src/theme/tokens';
@@ -72,13 +76,16 @@ export default function HomeScreen() {
         }
       >
         {/* ─── Header ─── */}
-        <View className="px-5 pt-4 pb-2">
-          <Text className="text-caption text-text-tertiary uppercase tracking-widest">
-            {greeting}
-          </Text>
-          <Text className="text-h1 text-text-primary mt-0.5">
-            {firstName ? `Olá, ${firstName}` : 'Glype'}
-          </Text>
+        <View className="px-5 pt-4 pb-2 flex-row items-center justify-between">
+          <View>
+            <Text className="text-caption text-text-tertiary uppercase tracking-widest">
+              {greeting}
+            </Text>
+            <Text className="text-h1 text-text-primary mt-0.5">
+              {firstName ? `Olá, ${firstName}` : 'Glype'}
+            </Text>
+          </View>
+          <NotificationBell onPress={() => router.push('/notifications' as never)} />
         </View>
 
         {/* ─── Em Alta ─── */}
@@ -137,6 +144,22 @@ export default function HomeScreen() {
             }
           />
         )}
+
+        {/* ─── Coleções curadas ─── */}
+        <SectionHeader title="Coleções" className="mt-4" />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 4 }}
+        >
+          {COLLECTIONS.map((col) => (
+            <CollectionPreviewCard
+              key={col.id}
+              collection={col}
+              onPress={() => router.push(`/collection/${col.id}` as never)}
+            />
+          ))}
+        </ScrollView>
 
         {/* ─── Feed dos seguidos ─── */}
         <SectionHeader title="Seguindo" className="mt-4" />
@@ -369,6 +392,81 @@ function FeedCard({
       />
       </Pressable>
     </View>
+  );
+}
+
+// ─── NotificationBell ────────────────────────────────────────────────────────
+
+function NotificationBell({ onPress }: { onPress: () => void }) {
+  const { data: unreadCount } = useUnreadCount();
+  const count = unreadCount ?? 0;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={count > 0 ? `${count} notificações novas` : 'Notificações'}
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: tokens.color.bg.elevated,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <BellIcon size={20} color={tokens.color.text.primary} />
+      {count > 0 && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 4,
+            right: 4,
+            minWidth: 16,
+            height: 16,
+            borderRadius: 8,
+            paddingHorizontal: 4,
+            backgroundColor: tokens.color.semantic.danger,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 2,
+            borderColor: tokens.color.bg.primary,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: tokens.fontFamily.monoMedium,
+              fontSize: 9,
+              color: '#fff',
+            }}
+          >
+            {count > 9 ? '9+' : count}
+          </Text>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
+// ─── CollectionPreviewCard ───────────────────────────────────────────────────
+// Wrapper que carrega os primeiros 3 jogos da coleção pra mostrar as capas.
+
+function CollectionPreviewCard({
+  collection,
+  onPress,
+}: {
+  collection: CollectionDef;
+  onPress: () => void;
+}) {
+  const { data, isLoading } = useCollection(collection.id, 3);
+  return (
+    <CollectionCard
+      collection={collection}
+      previewGames={data?.results}
+      loading={isLoading}
+      onPress={onPress}
+    />
   );
 }
 

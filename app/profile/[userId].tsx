@@ -3,15 +3,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar, Button, Pill, SectionHeader } from '@/src/components/ui';
-import { ScoreBadge } from '@/src/components/domain';
+import { ScoreBadge, TopGamesRow } from '@/src/components/domain';
 import { usePublicProfile, useUserPublicReviews } from '@/src/hooks/useProfile';
 import { useFollowCounts, useIsFollowing, useFollowUser, useUnfollowUser } from '@/src/hooks/useFeed';
 import { useProfileStats } from '@/src/hooks/useProfile';
+import { useFavoriteGames } from '@/src/hooks/useFavorites';
 import { useDeleteReview } from '@/src/hooks/useReviews';
 import { useBatchLikes, useLikeReview, useUnlikeReview } from '@/src/hooks/useLikes';
 import { useAuthStore } from '@/src/stores/auth';
 import { tokens } from '@/src/theme/tokens';
-import { ChevronLeftIcon, EllipsisIcon, HeartIcon, HeartOutlineIcon } from '@/src/components/ui/icons';
+import { ChevronLeftIcon, EllipsisIcon, HeartIcon, HeartOutlineIcon, LocationIcon, PersonCircleIcon } from '@/src/components/ui/icons';
 import type { ReviewWithGame } from '@/src/services/profile.service';
 
 export default function PublicProfileScreen() {
@@ -24,6 +25,7 @@ export default function PublicProfileScreen() {
   const { data: stats } = useProfileStats();
   const { data: reviews, isLoading: reviewsLoading } = useUserPublicReviews(userId ?? null);
   const { data: counts } = useFollowCounts(userId ?? null);
+  const { data: favorites } = useFavoriteGames(userId ?? null);
   const { data: isFollowing } = useIsFollowing(isMe ? null : (userId ?? null));
   const follow = useFollowUser();
   const unfollow = useUnfollowUser();
@@ -52,7 +54,7 @@ export default function PublicProfileScreen() {
           <BackButton onPress={() => router.back()} />
         </View>
         <View className="flex-1 items-center justify-center gap-3">
-          <Text className="text-display-2 text-text-tertiary">👤</Text>
+          <PersonCircleIcon size={56} color={tokens.color.text.tertiary} />
           <Text className="text-body-lg text-text-secondary">Perfil não encontrado</Text>
         </View>
       </SafeAreaView>
@@ -100,9 +102,12 @@ export default function PublicProfileScreen() {
               </Text>
             )}
             {displayProfile.location && (
-              <Text className="text-caption text-text-tertiary mt-0.5">
-                📍 {displayProfile.location}
-              </Text>
+              <View className="flex-row items-center gap-1 mt-0.5">
+                <LocationIcon size={12} color={tokens.color.text.tertiary} />
+                <Text className="text-caption text-text-tertiary">
+                  {displayProfile.location}
+                </Text>
+              </View>
             )}
           </View>
 
@@ -160,6 +165,19 @@ export default function PublicProfileScreen() {
               {displayProfile.favorite_genres.map((g) => (
                 <Pill key={g} label={g} variant="active" />
               ))}
+            </View>
+          </>
+        )}
+
+        {/* ─── Top 5 jogos ─── */}
+        {(favorites?.length ?? 0) > 0 && (
+          <>
+            <SectionHeader title="Top 5 Jogos" />
+            <View className="mb-5 mt-1">
+              <TopGamesRow
+                favorites={favorites!}
+                onGamePress={(rawgId) => router.push(`/game/${rawgId}` as never)}
+              />
             </View>
           </>
         )}

@@ -4,6 +4,7 @@ import {
   getGameDetail,
   getTrendingGames,
   getRecommendations,
+  getCollection,
   getGameByRawgId,
 } from '@/src/services/games.service';
 
@@ -20,6 +21,8 @@ export const gameKeys = {
     ['games', 'trending', pageSize ?? 20] as const,
   recommendations: (genres: string[], pageSize?: number) =>
     ['games', 'recommendations', genres.join(','), pageSize ?? 20] as const,
+  collection: (id: string, pageSize?: number) =>
+    ['games', 'collection', id, pageSize ?? 20] as const,
   byRawgId: (rawgId: number) =>
     ['games', 'byRawgId', rawgId] as const,
 };
@@ -57,6 +60,15 @@ export function useRecommendations(genres: string[], pageSize = 20) {
     queryKey: gameKeys.recommendations(genres, pageSize),
     queryFn: () => getRecommendations(genres, pageSize),
     staleTime: 1000 * 60 * 60 * 24, // 24h — alinhado ao cache da Edge Function
+  });
+}
+
+export function useCollection(collectionId: string, pageSize = 20) {
+  return useQuery({
+    queryKey: gameKeys.collection(collectionId, pageSize),
+    queryFn: () => getCollection(collectionId, pageSize),
+    staleTime: 1000 * 60 * 60 * 6, // 6h — alinhado ao cache da Edge Function
+    enabled: collectionId.length > 0,
   });
 }
 

@@ -18,3 +18,7 @@ export type { FilterTabsProps, FilterTabOption } from './FilterTabs';
 export { BottomTabBar } from './BottomTabBar';
 export { SearchFilters } from './SearchFilters';
 export type { SearchFiltersState, PlatformFilter, ScoreFilter, SortOrder } from './SearchFilters';
+export { CollectionCard } from './CollectionCard';
+export type { CollectionCardProps } from './CollectionCard';
+export { TopGamesRow, TopGamesEmptyCTA } from './TopGamesRow';
+export type { TopGamesRowProps, TopGamesEmptyCTAProps } from './TopGamesRow';

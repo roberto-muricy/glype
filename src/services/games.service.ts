@@ -33,6 +33,16 @@ export async function getRecommendations(
   return fetchEdgeFunction<GamesListResponse>('games-recommendations', params);
 }
 
+export async function getCollection(
+  collectionId: string,
+  pageSize = 20,
+): Promise<GamesListResponse> {
+  return fetchEdgeFunction<GamesListResponse>('games-collection', {
+    collection: collectionId,
+    page_size: String(pageSize),
+  });
+}
+
 // Busca jogo pelo rawg_id direto na tabela `games` (cache Supabase).
 // Tela de detalhe usa isso primeiro; só chama a Edge Function se não encontrar.
 export async function getGameByRawgId(rawgId: number): Promise<Game | null> {

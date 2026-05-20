@@ -5,6 +5,8 @@ import {
   signIn as signInService,
   signOut as signOutService,
   signUp as signUpService,
+  signInWithApple as signInWithAppleService,
+  signInWithGoogle as signInWithGoogleService,
   type SignInInput,
   type SignUpInput,
 } from '@/src/services/auth.service';
@@ -80,5 +82,23 @@ export function useAuth() {
     reset();
   };
 
-  return { user, profile, session, isLoading, signIn, signUp, signOut };
+  const signInWithApple = async (): Promise<void> => {
+    await signInWithAppleService();
+  };
+
+  const signInWithGoogle = async (): Promise<void> => {
+    await signInWithGoogleService();
+  };
+
+  return {
+    user,
+    profile,
+    session,
+    isLoading,
+    signIn,
+    signUp,
+    signOut,
+    signInWithApple,
+    signInWithGoogle,
+  };
 }

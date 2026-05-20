@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -8,26 +8,29 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Avatar, Button, Toast } from '@/src/components/ui';
 import { useUpdateProfile } from '@/src/hooks/useProfile';
 import { useSuggestedUsers, useFollowUser, useUnfollowUser } from '@/src/hooks/useFeed';
 import { tokens } from '@/src/theme/tokens';
 
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const GENRE_OPTIONS = [
-  { value: 'action', label: 'Ação', emoji: '⚔️' },
-  { value: 'role-playing-games-rpg', label: 'RPG', emoji: '🧙' },
-  { value: 'adventure', label: 'Aventura', emoji: '🗺️' },
-  { value: 'shooter', label: 'Shooter', emoji: '🎯' },
-  { value: 'sports', label: 'Esportes', emoji: '⚽' },
-  { value: 'racing', label: 'Corrida', emoji: '🏎️' },
-  { value: 'indie', label: 'Indie', emoji: '🎨' },
-  { value: 'strategy', label: 'Estratégia', emoji: '♟️' },
-  { value: 'puzzle', label: 'Puzzle', emoji: '🧩' },
-  { value: 'fighting', label: 'Luta', emoji: '🥊' },
-  { value: 'platformer', label: 'Plataforma', emoji: '🍄' },
-  { value: 'horror', label: 'Terror', emoji: '👻' },
+const GENRE_OPTIONS: { value: string; label: string; icon: IoniconName }[] = [
+  { value: 'action', label: 'Ação', icon: 'flash-outline' },
+  { value: 'role-playing-games-rpg', label: 'RPG', icon: 'color-wand-outline' },
+  { value: 'adventure', label: 'Aventura', icon: 'map-outline' },
+  { value: 'shooter', label: 'Shooter', icon: 'locate-outline' },
+  { value: 'sports', label: 'Esportes', icon: 'football-outline' },
+  { value: 'racing', label: 'Corrida', icon: 'car-sport-outline' },
+  { value: 'indie', label: 'Indie', icon: 'color-palette-outline' },
+  { value: 'strategy', label: 'Estratégia', icon: 'bulb-outline' },
+  { value: 'puzzle', label: 'Puzzle', icon: 'extension-puzzle-outline' },
+  { value: 'fighting', label: 'Luta', icon: 'fitness-outline' },
+  { value: 'platformer', label: 'Plataforma', icon: 'walk-outline' },
+  { value: 'horror', label: 'Terror', icon: 'skull-outline' },
 ];
 
 const MIN_GENRES = 3;
@@ -159,7 +162,11 @@ function StepGenres({
                 gap: 10,
               }}
             >
-              <Text style={{ fontSize: 24 }}>{g.emoji}</Text>
+              <Ionicons
+                name={g.icon}
+                size={22}
+                color={isSelected ? tokens.color.brand.primary : tokens.color.text.secondary}
+              />
               <Text
                 style={{
                   color: isSelected ? tokens.color.text.primary : tokens.color.text.body,

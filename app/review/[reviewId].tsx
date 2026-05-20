@@ -1,4 +1,16 @@
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,9 +19,23 @@ import { ScoreBadge } from '@/src/components/domain';
 import { useReviewDetail } from '@/src/hooks/useProfile';
 import { useIsFollowing, useFollowUser, useUnfollowUser } from '@/src/hooks/useFeed';
 import { useBatchLikes, useLikeReview, useUnlikeReview } from '@/src/hooks/useLikes';
+import {
+  useReviewComments,
+  useCreateComment,
+  useDeleteComment,
+} from '@/src/hooks/useComments';
 import { useAuthStore } from '@/src/stores/auth';
 import { tokens } from '@/src/theme/tokens';
-import { ChevronLeftIcon, HeartIcon, HeartOutlineIcon } from '@/src/components/ui/icons';
+import { relativeTime } from '@/src/utils/relativeTime';
+import {
+  ChevronLeftIcon,
+  HeartIcon,
+  HeartOutlineIcon,
+  ChatBubbleIcon,
+  SendIcon,
+  TrashIcon,
+} from '@/src/components/ui/icons';
+import type { ReviewComment } from '@/src/types/models';
 
 export default function ReviewDetailScreen() {
   const router = useRouter();
@@ -25,6 +51,22 @@ export default function ReviewDetailScreen() {
   const { data: isFollowing } = useIsFollowing(isMe ? null : (review?.user.id ?? null));
   const follow = useFollowUser();
   const unfollow = useUnfollowUser();
+
+  const { data: comments, isLoading: commentsLoading } = useReviewComments(reviewId ?? null);
+  const createComment = useCreateComment();
+  const deleteComment = useDeleteComment();
+  const [commentText, setCommentText] = useState('');
+
+  const handleSendComment = async () => {
+    const body = commentText.trim();
+    if (!body || !reviewId) return;
+    try {
+      await createComment.mutateAsync({ reviewId, body });
+      setCommentText('');
+    } catch (e) {
+      Alert.alert('Erro', e instanceof Error ? e.message : 'Não foi possível enviar');
+    }
+  };
 
   const likeData = likesMap?.[reviewId ?? ''];
   const liked = likeData?.liked ?? false;
@@ -45,7 +87,7 @@ export default function ReviewDetailScreen() {
           <BackButton onPress={() => router.back()} />
         </View>
         <View className="flex-1 items-center justify-center gap-3">
-          <Text className="text-display-2 text-text-tertiary">💬</Text>
+          <ChatBubbleIcon size={40} color={tokens.color.text.tertiary} />
           <Text className="text-body-lg text-text-secondary">Review não encontrada</Text>
         </View>
       </SafeAreaView>
@@ -87,9 +129,15 @@ export default function ReviewDetailScreen() {
         </Pressable>
       </View>
 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 48 }}
+        keyboardShouldPersistTaps="handled"
       >
         {/* ─── Game cover hero ─── */}
         <Pressable
@@ -209,6 +257,110 @@ export default function ReviewDetailScreen() {
           </Text>
         </View>
 
+        {/* ─── Comentários ─── */}
+        <View className="px-5 mt-8 pt-5 border-t border-border-subtle">
+          <View className="flex-row items-center gap-2 mb-3">
+            <ChatBubbleIcon size={18} color={tokens.color.text.primary} />
+            <Text
+              style={{
+                fontFamily: tokens.fontFamily.medium,
+                fontSize: 16,
+                color: tokens.color.text.primary,
+              }}
+            >
+              Comentários
+              {(comments?.length ?? 0) > 0 && (
+                <Text style={{ color: tokens.color.text.secondary }}> · {comments!.length}</Text>
+              )}
+            </Text>
+          </View>
+
+          {/* Input de novo comentário */}
+          {currentUser && (
+            <View
+              className="flex-row items-end gap-2 mb-4 rounded-xl bg-bg-elevated border border-border-subtle px-3 py-2"
+            >
+              <TextInput
+                value={commentText}
+                onChangeText={setCommentText}
+                placeholder="Escreva um comentário…"
+                placeholderTextColor={tokens.color.text.tertiary}
+                multiline
+                maxLength={500}
+                style={{
+                  flex: 1,
+                  color: tokens.color.text.primary,
+                  fontFamily: tokens.fontFamily.regular,
+                  fontSize: 14,
+                  maxHeight: 100,
+                  paddingTop: 6,
+                  paddingBottom: 6,
+                }}
+              />
+              <Pressable
+                onPress={handleSendComment}
+                disabled={!commentText.trim() || createComment.isPending}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel="Enviar comentário"
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: commentText.trim()
+                    ? tokens.color.brand.primary
+                    : tokens.color.bg.surface,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: createComment.isPending ? 0.5 : 1,
+                }}
+              >
+                <SendIcon
+                  size={14}
+                  color={commentText.trim() ? '#fff' : tokens.color.text.tertiary}
+                />
+              </Pressable>
+            </View>
+          )}
+
+          {/* Lista */}
+          {commentsLoading ? (
+            <View className="py-6 items-center">
+              <ActivityIndicator color={tokens.color.brand.primary} />
+            </View>
+          ) : (comments?.length ?? 0) === 0 ? (
+            <Text className="text-caption text-text-tertiary text-center py-4">
+              Seja o primeiro a comentar.
+            </Text>
+          ) : (
+            <View className="gap-3">
+              {comments!.map((c) => (
+                <CommentRow
+                  key={c.id}
+                  comment={c}
+                  isOwn={c.user.id === currentUser?.id}
+                  onUserPress={() => router.push(`/profile/${c.user.id}` as never)}
+                  onDelete={() =>
+                    Alert.alert(
+                      'Excluir comentário?',
+                      'Essa ação não pode ser desfeita.',
+                      [
+                        { text: 'Cancelar', style: 'cancel' },
+                        {
+                          text: 'Excluir',
+                          style: 'destructive',
+                          onPress: () =>
+                            deleteComment.mutate({ commentId: c.id, reviewId: reviewId! }),
+                        },
+                      ],
+                    )
+                  }
+                />
+              ))}
+            </View>
+          )}
+        </View>
+
         {/* ─── Ver jogo CTA ─── */}
         {review.game.rawg_id != null && (
           <View className="px-5 mt-6">
@@ -220,7 +372,71 @@ export default function ReviewDetailScreen() {
           </View>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+// ─── CommentRow ───────────────────────────────────────────────────────────────
+
+function CommentRow({
+  comment,
+  isOwn,
+  onUserPress,
+  onDelete,
+}: {
+  comment: ReviewComment;
+  isOwn: boolean;
+  onUserPress: () => void;
+  onDelete: () => void;
+}) {
+  const displayName = comment.user.display_name ?? comment.user.username;
+  return (
+    <View className="flex-row gap-3">
+      <Pressable onPress={onUserPress} accessibilityRole="button">
+        <Avatar name={displayName} uri={comment.user.avatar_url} size="sm" />
+      </Pressable>
+      <View className="flex-1">
+        <View className="flex-row items-center justify-between">
+          <Pressable onPress={onUserPress} accessibilityRole="button" className="flex-row items-center gap-2">
+            <Text
+              style={{
+                fontFamily: tokens.fontFamily.medium,
+                fontSize: 13,
+                color: tokens.color.text.primary,
+              }}
+            >
+              {displayName}
+            </Text>
+            <Text className="text-caption text-text-tertiary">
+              {relativeTime(comment.created_at)}
+            </Text>
+          </Pressable>
+          {isOwn && (
+            <Pressable
+              onPress={onDelete}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel="Excluir comentário"
+              style={{ padding: 4 }}
+            >
+              <TrashIcon size={14} color={tokens.color.text.tertiary} />
+            </Pressable>
+          )}
+        </View>
+        <Text
+          style={{
+            fontFamily: tokens.fontFamily.regular,
+            fontSize: 14,
+            lineHeight: 20,
+            color: tokens.color.text.body,
+            marginTop: 2,
+          }}
+        >
+          {comment.body}
+        </Text>
+      </View>
+    </View>
   );
 }
 

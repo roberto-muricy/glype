@@ -12,6 +12,13 @@
       },
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://faryowbibtszfnwawecs.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_CEcjOY6dmpf6ZS7pxJCeLQ_Rbn296xi",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "876908305924-4b8c0udoa2p1iap4gco53h3ar5blipjr.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "876908305924-11c433a75bcnrhcmre7arbg60614grsi.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME": "com.googleusercontent.apps.876908305924-11c433a75bcnrhcmre7arbg60614grsi"
       }
     },
     "preview": {
@@ -21,6 +28,13 @@
       },
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://faryowbibtszfnwawecs.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_CEcjOY6dmpf6ZS7pxJCeLQ_Rbn296xi",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "876908305924-4b8c0udoa2p1iap4gco53h3ar5blipjr.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "876908305924-11c433a75bcnrhcmre7arbg60614grsi.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME": "com.googleusercontent.apps.876908305924-11c433a75bcnrhcmre7arbg60614grsi"
       }
     },
     "production": {
@@ -30,6 +44,13 @@
       },
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://faryowbibtszfnwawecs.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_CEcjOY6dmpf6ZS7pxJCeLQ_Rbn296xi",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "876908305924-4b8c0udoa2p1iap4gco53h3ar5blipjr.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "876908305924-11c433a75bcnrhcmre7arbg60614grsi.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME": "com.googleusercontent.apps.876908305924-11c433a75bcnrhcmre7arbg60614grsi"
       }
     }
   },

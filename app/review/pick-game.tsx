@@ -89,7 +89,7 @@ export default function PickGameScreen() {
         </View>
       ) : games.length === 0 && isSearching ? (
         <View className="flex-1 items-center justify-center gap-2 px-8">
-          <Text className="text-display-2 text-text-tertiary">🔍</Text>
+          <SearchTabIcon size={40} color={tokens.color.text.tertiary} />
           <Text className="text-body-lg text-text-secondary text-center">
             Nenhum jogo encontrado para "{debouncedQuery}"
           </Text>

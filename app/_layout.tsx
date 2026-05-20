@@ -83,6 +83,9 @@ function AuthGate() {
       <Stack.Screen name="profile/[userId]" options={{ presentation: 'card' }} />
       <Stack.Screen name="profile/followers" options={{ presentation: 'card' }} />
       <Stack.Screen name="profile/edit" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="profile/top-games" options={{ presentation: 'card' }} />
+      <Stack.Screen name="collection/[id]" options={{ presentation: 'card' }} />
+      <Stack.Screen name="notifications" options={{ presentation: 'card' }} />
       <Stack.Screen name="dev/components" options={{ presentation: 'modal' }} />
       <Stack.Screen name="dev/data" options={{ presentation: 'modal' }} />
     </Stack>

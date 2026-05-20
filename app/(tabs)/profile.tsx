@@ -2,10 +2,12 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Avatar, Button, Card, Pill, SectionHeader } from '@/src/components/ui';
+import { TopGamesRow, TopGamesEmptyCTA } from '@/src/components/domain';
 import { useAuth } from '@/src/hooks/useAuth';
 import { useProfileStats } from '@/src/hooks/useProfile';
 import { useMyLibrary } from '@/src/hooks/useLibrary';
 import { useFollowCounts } from '@/src/hooks/useFeed';
+import { useFavoriteGames } from '@/src/hooks/useFavorites';
 import { GAME_STATUS_LABEL, type GameStatus } from '@/src/types/models';
 import { tokens } from '@/src/theme/tokens';
 
@@ -17,6 +19,7 @@ export default function ProfileScreen() {
   const { data: stats } = useProfileStats();
   const { data: library } = useMyLibrary();
   const { data: counts } = useFollowCounts(user?.id ?? null);
+  const { data: favorites } = useFavoriteGames(user?.id ?? null);
 
   const onSignOut = async () => {
     Alert.alert('Sair', 'Tem certeza que quer sair?', [
@@ -114,6 +117,37 @@ export default function ProfileScreen() {
             label="Na biblioteca"
           />
         </View>
+
+        {/* ─── Top 5 jogos ─── */}
+        {(favorites?.length ?? 0) > 0 ? (
+          <>
+            <SectionHeader
+              title="Top 5 Jogos"
+              rightSlot={
+                <Pressable
+                  onPress={() => router.push('/profile/top-games' as never)}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Editar Top 5"
+                >
+                  <Text className="text-caption text-brand-primary">Editar</Text>
+                </Pressable>
+              }
+            />
+            <View className="mb-4 mt-1">
+              <TopGamesRow
+                favorites={favorites!}
+                onGamePress={(rawgId) => router.push(`/game/${rawgId}` as never)}
+              />
+            </View>
+          </>
+        ) : (
+          <View className="mb-4 mt-2">
+            <TopGamesEmptyCTA
+              onPress={() => router.push('/profile/top-games' as never)}
+            />
+          </View>
+        )}
 
         {/* ─── Biblioteca por status ─── */}
         <SectionHeader title="Biblioteca" />

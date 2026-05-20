@@ -113,6 +113,50 @@ export interface FollowCounts {
   following: number;
 }
 
+export interface FavoriteGame {
+  rank: number;
+  game: {
+    id: string;
+    rawg_id: number | null;
+    title: string;
+    cover_url: string | null;
+  };
+}
+
+export type NotificationType = 'like' | 'follow' | 'comment';
+
+export interface ReviewComment {
+  id: string;
+  review_id: string;
+  body: string;
+  created_at: string;
+  user: {
+    id: string;
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  };
+}
+
+export interface NotificationItem {
+  id: string;
+  type: NotificationType;
+  is_read: boolean;
+  created_at: string;
+  actor: {
+    id: string;
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  };
+  /** Presente apenas em notificações do tipo 'like' */
+  review: {
+    id: string;
+    game_title: string;
+    game_rawg_id: number | null;
+  } | null;
+}
+
 export const GAME_STATUS_LABEL: Record<GameStatus, string> = {
   playing: 'Jogando',
   played: 'Jogado',
