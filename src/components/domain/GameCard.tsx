@@ -1,4 +1,5 @@
-import { Image, Pressable, Text, View, type PressableProps } from 'react-native';
+import { Pressable, Text, View, type PressableProps } from 'react-native';
+import { Image } from 'expo-image';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { cva, type VariantProps } from 'class-variance-authority';
@@ -65,11 +66,16 @@ export function GameCard({
     >
       <View className="relative">
         {coverUrl ? (
-          <Image
-            source={{ uri: coverUrl }}
-            accessibilityIgnoresInvertColors
-            className={coverVariants({ size })}
-          />
+          <View className={coverVariants({ size })}>
+            <Image
+              source={{ uri: coverUrl }}
+              accessibilityIgnoresInvertColors
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={200}
+              style={{ width: '100%', height: '100%' }}
+            />
+          </View>
         ) : (
           <LinearGradient
             colors={[tokens.color.brand.dark, tokens.color.bg.surface]}

@@ -1,8 +1,10 @@
-import { Pressable, Text, View, Image } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Skeleton } from '@/src/components/ui';
 import { tokens } from '@/src/theme/tokens';
+import { useCollectionLabels } from '@/src/i18n/useCollectionLabels';
 import type { CollectionDef } from '@/src/config/collections';
 import type { Game } from '@/src/types/models';
 
@@ -26,19 +28,20 @@ export function CollectionCard({
   onPress,
 }: CollectionCardProps) {
   const covers = (previewGames ?? []).slice(0, 3);
+  const { title, subtitle } = useCollectionLabels(collection);
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={collection.title}
-      style={({ pressed }) => ({
+      accessibilityLabel={title}
+      style={{
         width: CARD_WIDTH,
         height: CARD_HEIGHT,
         borderRadius: 16,
         overflow: 'hidden',
-        opacity: pressed ? 0.85 : 1,
-      })}
+        backgroundColor: collection.colorDark,
+      }}
     >
       {/* Fundo com gradiente da coleção */}
       <LinearGradient
@@ -105,7 +108,9 @@ export function CollectionCard({
                   <Image
                     source={{ uri: game.cover_url }}
                     style={{ width: COVER_W, height: COVER_H }}
-                    resizeMode="cover"
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
                   />
                 ) : (
                   <View
@@ -148,7 +153,7 @@ export function CollectionCard({
           }}
           numberOfLines={2}
         >
-          {collection.title}
+          {title}
         </Text>
         <Text
           style={{
@@ -159,7 +164,7 @@ export function CollectionCard({
           }}
           numberOfLines={1}
         >
-          {collection.subtitle}
+          {subtitle}
         </Text>
       </View>
     </Pressable>

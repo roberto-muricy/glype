@@ -4,7 +4,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Glype',
   slug: 'glype',
-  version: '1.0.0',
+  version: '1.1.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'glype',
@@ -36,6 +36,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-router',
     'expo-secure-store',
     'expo-apple-authentication',
+    // '@sentry/react-native/expo' removido até configurar SENTRY_AUTH_TOKEN no EAS.
+    // Sentry runtime continua funcionando via Sentry.init() em src/lib/sentry.ts.
+    // O plugin é só pra upload de source maps no build — sem auth token, ele trava o build Android.
     [
       '@react-native-google-signin/google-signin',
       {
@@ -72,6 +75,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   extra: {
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+    sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    posthogApiKey: process.env.EXPO_PUBLIC_POSTHOG_API_KEY,
+    posthogHost: process.env.EXPO_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com',
     eas: {
       projectId: '76ed59a4-4e45-4b2a-b1ab-eb531696ff95',
     },

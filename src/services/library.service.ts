@@ -60,3 +60,48 @@ export async function removeFromLibrary(gameId: string): Promise<void> {
 
   if (error) throw new Error(error.message);
 }
+
+// ─── Biblioteca pública de outro usuário ──────────────────────────────────────
+
+/** Lista jogos da biblioteca de um usuário específico (público). */
+export async function getUserLibrary(
+  userId: string,
+  status?: GameStatus,
+): Promise<UserGame[]> {
+  let query = supabase
+    .from('user_games')
+    .select('*, game:games(*)')
+    .eq('user_id', userId)
+    .order('added_at', { ascending: false });
+
+  if (status) {
+    query = query.eq('status', status);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as UserGame[];
+}
+
+/** Conta jogos por status pra um usuário específico (numa query só). */
+export async function getUserLibraryCounts(
+  userId: string,
+): Promise<Record<GameStatus, number> & { total: number }> {
+  const { data, error } = await supabase
+    .from('user_games')
+    .select('status')
+    .eq('user_id', userId);
+
+  if (error) throw new Error(error.message);
+
+  const counts: Record<GameStatus, number> = {
+    playing: 0,
+    played: 0,
+    wishlist: 0,
+    dropped: 0,
+  };
+  for (const row of (data ?? []) as { status: GameStatus }[]) {
+    counts[row.status] = (counts[row.status] ?? 0) + 1;
+  }
+  return { ...counts, total: data?.length ?? 0 };
+}

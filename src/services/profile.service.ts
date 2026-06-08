@@ -60,7 +60,7 @@ export async function getPublicProfile(userId: string): Promise<Profile> {
 export interface ReviewWithGame {
   id: string;
   score: number;
-  body: string;
+  body: string | null;
   has_spoiler: boolean;
   completed: boolean;
   playtime_hours: number | null;
@@ -96,13 +96,16 @@ export async function getReviewDetail(reviewId: string): Promise<ReviewDetail | 
     .from('reviews')
     .select(`
       id, score, body, has_spoiler, completed, playtime_hours, created_at,
-      user:profiles ( id, username, display_name, avatar_url ),
-      game:games ( id, title, cover_url, background_url, rawg_id, genres, release_date )
+      user:profiles!user_id ( id, username, display_name, avatar_url ),
+      game:games!game_id ( id, title, cover_url, background_url, rawg_id, genres, release_date )
     `)
     .eq('id', reviewId)
     .maybeSingle();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error('[getReviewDetail]', error);
+    throw new Error(error.message);
+  }
   return data as unknown as ReviewDetail | null;
 }
 

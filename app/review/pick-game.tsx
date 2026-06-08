@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSearchGames, useTrendingGames } from '@/src/hooks/useGames';
 import { useDebounce } from '@/src/hooks/useDebounce';
@@ -19,6 +20,7 @@ import type { Game } from '@/src/types/models';
 
 export default function PickGameScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 350);
 
@@ -50,7 +52,7 @@ export default function PickGameScreen() {
             autoFocus
             value={query}
             onChangeText={setQuery}
-            placeholder="Buscar jogo…"
+            placeholder={t('review.pickGameSearch')}
             placeholderTextColor={tokens.color.text.tertiary}
             returnKeyType="search"
             style={{
@@ -69,16 +71,16 @@ export default function PickGameScreen() {
           onPress={() => router.back()}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Cancelar"
+          accessibilityLabel={t('common.cancel')}
         >
-          <Text className="text-body-lg text-brand-primary">Cancelar</Text>
+          <Text className="text-body-lg text-brand-primary">{t('common.cancel')}</Text>
         </Pressable>
       </View>
 
       {/* ─── Section label ─── */}
       <View className="px-4 pt-4 pb-2">
         <Text className="text-section uppercase text-brand-muted">
-          {isSearching ? 'Resultados' : 'Em Alta'}
+          {isSearching ? t('review.results') : t('review.trending')}
         </Text>
       </View>
 
@@ -91,7 +93,7 @@ export default function PickGameScreen() {
         <View className="flex-1 items-center justify-center gap-2 px-8">
           <SearchTabIcon size={40} color={tokens.color.text.tertiary} />
           <Text className="text-body-lg text-text-secondary text-center">
-            Nenhum jogo encontrado para "{debouncedQuery}"
+            {t('review.pickGameNotFound', { query: debouncedQuery })}
           </Text>
         </View>
       ) : (
@@ -115,11 +117,12 @@ export default function PickGameScreen() {
 // ─── GameRow ─────────────────────────────────────────────────────────────────
 
 function GameRow({ game, onPress }: { game: Game; onPress: () => void }) {
+  const { t } = useTranslation();
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Selecionar ${game.title}`}
+      accessibilityLabel={t('review.pickGameSelect', { title: game.title })}
       className="flex-row items-center gap-3 py-3"
     >
       {/* Cover thumbnail */}

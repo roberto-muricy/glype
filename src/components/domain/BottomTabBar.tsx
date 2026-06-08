@@ -2,6 +2,7 @@ import { Pressable, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { cn } from '@/src/utils/cn';
 import { tokens } from '@/src/theme/tokens';
@@ -27,11 +28,11 @@ const TAB_ICONS: Record<string, { Off: React.FC<{ size?: number; color?: string 
   profile: { Off: PersonIcon, On: PersonFilledIcon },
 };
 
-const TAB_LABEL: Record<string, string> = {
-  index: 'Home',
-  search: 'Busca',
-  library: 'Biblioteca',
-  profile: 'Perfil',
+const TAB_LABEL_KEY: Record<string, string> = {
+  index: 'tabs.home',
+  search: 'tabs.search',
+  library: 'tabs.library',
+  profile: 'tabs.profile',
 };
 
 /**
@@ -41,6 +42,11 @@ const TAB_LABEL: Record<string, string> = {
  */
 export function BottomTabBar({ state, navigation }: BottomTabBarProps) {
   const router = useRouter();
+  const { t } = useTranslation();
+  const labelFor = (routeName: string): string => {
+    const key = TAB_LABEL_KEY[routeName];
+    return key ? t(key) : routeName;
+  };
   const plusScale = useSharedValue(1);
   const plusStyle = useAnimatedStyle(() => ({ transform: [{ scale: plusScale.value }] }));
   // Insere um item "spacer" no meio para o botão de + review se sobrepor.
@@ -72,7 +78,7 @@ export function BottomTabBar({ state, navigation }: BottomTabBarProps) {
         }}
         accessibilityRole="button"
         accessibilityState={{ selected: isFocused }}
-        accessibilityLabel={TAB_LABEL[route.name] ?? route.name}
+        accessibilityLabel={labelFor(route.name)}
         className="flex-1 items-center justify-center gap-1 py-2"
       >
         <Icon size={22} color={color} />
@@ -82,7 +88,7 @@ export function BottomTabBar({ state, navigation }: BottomTabBarProps) {
             isFocused ? 'text-brand-primary font-medium' : 'text-text-secondary',
           )}
         >
-          {TAB_LABEL[route.name] ?? route.name}
+          {labelFor(route.name)}
         </Text>
       </Pressable>
     );

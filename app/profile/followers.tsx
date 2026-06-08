@@ -1,6 +1,7 @@
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { Avatar, Button, EmptyState } from '@/src/components/ui';
 import { useFollowers, useFollowingList, useFollowUser, useUnfollowUser, useIsFollowing } from '@/src/hooks/useFeed';
@@ -19,6 +20,7 @@ type Profile = {
 
 export default function FollowersScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { userId, tab: initialTab } = useLocalSearchParams<{ userId: string; tab?: string }>();
   const [activeTab, setActiveTab] = useState<Tab>(
     initialTab === 'following' ? 'following' : 'followers',
@@ -38,23 +40,23 @@ export default function FollowersScreen() {
           onPress={() => router.back()}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Voltar"
+          accessibilityLabel={t('common.back')}
           className="flex-row items-center gap-1"
         >
           <ChevronLeftIcon size={20} color={tokens.color.brand.primary} />
-          <Text className="text-body text-brand-primary">Voltar</Text>
+          <Text className="text-body text-brand-primary">{t('common.back')}</Text>
         </Pressable>
       </View>
 
       {/* Tabs */}
       <View className="flex-row border-b border-border-subtle mx-5 mb-2">
         <TabButton
-          label="Seguidores"
+          label={t('profile.tabFollowers')}
           active={activeTab === 'followers'}
           onPress={() => setActiveTab('followers')}
         />
         <TabButton
-          label="Seguindo"
+          label={t('profile.tabFollowing')}
           active={activeTab === 'following'}
           onPress={() => setActiveTab('following')}
         />
@@ -73,11 +75,11 @@ export default function FollowersScreen() {
           renderItem={({ item }) => <UserRow profile={item} />}
           ListEmptyComponent={
             <EmptyState
-              title={activeTab === 'followers' ? 'Sem seguidores ainda' : 'Não segue ninguém ainda'}
+              title={activeTab === 'followers' ? t('profile.noFollowersTitle') : t('profile.noFollowingTitle')}
               subtitle={
                 activeTab === 'followers'
-                  ? 'Quando alguém te seguir, aparece aqui.'
-                  : 'Busque jogadores na aba Buscar.'
+                  ? t('profile.noFollowersSubtitle')
+                  : t('profile.noFollowingSubtitle')
               }
             />
           }
@@ -118,6 +120,7 @@ function TabButton({ label, active, onPress }: { label: string; active: boolean;
 
 function UserRow({ profile }: { profile: Profile }) {
   const router = useRouter();
+  const { t } = useTranslation();
   const currentUser = useAuthStore((s) => s.user);
   const isMe = profile.id === currentUser?.id;
   const { data: following } = useIsFollowing(isMe ? null : profile.id);
@@ -130,7 +133,7 @@ function UserRow({ profile }: { profile: Profile }) {
     <Pressable
       onPress={() => router.push(`/profile/${profile.id}` as never)}
       accessibilityRole="button"
-      accessibilityLabel={`Ver perfil de ${displayName}`}
+      accessibilityLabel={t('profile.viewProfileOf', { name: displayName })}
       className="flex-row items-center gap-3 py-3"
     >
       <Avatar name={displayName} uri={profile.avatar_url} size="md" />
@@ -146,7 +149,7 @@ function UserRow({ profile }: { profile: Profile }) {
 
       {!isMe && (
         <Button
-          label={following ? 'Seguindo' : 'Seguir'}
+          label={following ? t('common.following') : t('common.follow')}
           size="sm"
           variant={following ? 'secondary' : 'primary'}
           loading={follow.isPending || unfollow.isPending}

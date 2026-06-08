@@ -10,6 +10,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { EmptyState, SectionHeader, Skeleton, Button, Avatar, Toast } from '@/src/components/ui';
 import { GameCard, ReviewCard, CollectionCard } from '@/src/components/domain';
 import { useTrendingGames, useRecommendations, useCollection } from '@/src/hooks/useGames';
@@ -18,7 +19,9 @@ import type { CollectionDef } from '@/src/config/collections';
 import { useFeed } from '@/src/hooks/useFeed';
 import { useUnreadCount } from '@/src/hooks/useNotifications';
 import { BellIcon } from '@/src/components/ui/icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useBatchLikes, useLikeReview, useUnlikeReview } from '@/src/hooks/useLikes';
+import { useBatchCommentCounts } from '@/src/hooks/useComments';
 import { useAuthStore } from '@/src/stores/auth';
 import { tokens } from '@/src/theme/tokens';
 import { hapticLight } from '@/src/utils/haptics';
@@ -26,6 +29,7 @@ import type { FeedItem, Game } from '@/src/types/models';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const profile = useAuthStore((s) => s.profile);
   const genres = profile?.favorite_genres ?? [];
 
@@ -54,14 +58,14 @@ export default function HomeScreen() {
     }
   }
 
-  const greeting = getGreeting();
+  const greeting = getGreeting(t);
   const firstName = profile?.display_name?.split(' ')[0] ?? profile?.username ?? '';
 
   return (
     <SafeAreaView className="flex-1 bg-bg-primary" edges={['top']}>
       {showRefreshedToast && (
         <View style={{ position: 'absolute', top: 56, left: 20, right: 20, zIndex: 99 }}>
-          <Toast variant="success" title="Feed atualizado" />
+          <Toast variant="success" title={t('home.feedRefreshed')} />
         </View>
       )}
       <ScrollView
@@ -82,7 +86,7 @@ export default function HomeScreen() {
               {greeting}
             </Text>
             <Text className="text-h1 text-text-primary mt-0.5">
-              {firstName ? `Olá, ${firstName}` : 'Glype'}
+              {firstName ? t('home.hello', { name: firstName }) : 'Glype'}
             </Text>
           </View>
           <NotificationBell onPress={() => router.push('/notifications' as never)} />
@@ -90,15 +94,15 @@ export default function HomeScreen() {
 
         {/* ─── Em Alta ─── */}
         <SectionHeader
-          title="Em Alta"
+          title={t('home.trending')}
           rightSlot={
             <Pressable
               onPress={() => router.push('/(tabs)/search')}
               hitSlop={8}
               accessibilityRole="button"
-              accessibilityLabel="Ver mais"
+              accessibilityLabel={t('common.seeMore')}
             >
-              <Text className="text-caption text-brand-primary">Ver mais</Text>
+              <Text className="text-caption text-brand-primary">{t('common.seeMore')}</Text>
             </Pressable>
           }
         />
@@ -115,9 +119,12 @@ export default function HomeScreen() {
           />
         )}
 
+        {/* ─── Descobrir (swipe deck) ─── */}
+        <DiscoverPromoCard onPress={() => router.push('/discover' as never)} />
+
         {/* ─── Para Você ─── */}
         <SectionHeader
-          title={genres.length > 0 ? 'Para Você' : 'Populares'}
+          title={genres.length > 0 ? t('home.forYou') : t('home.popular')}
           className="mt-4"
           rightSlot={
             genres.length === 0 ? (
@@ -125,9 +132,9 @@ export default function HomeScreen() {
                 onPress={() => router.push('/(tabs)/profile')}
                 hitSlop={8}
                 accessibilityRole="button"
-                accessibilityLabel="Personalizar"
+                accessibilityLabel={t('home.personalize')}
               >
-                <Text className="text-caption text-brand-primary">Personalizar</Text>
+                <Text className="text-caption text-brand-primary">{t('home.personalize')}</Text>
               </Pressable>
             ) : undefined
           }
@@ -146,23 +153,25 @@ export default function HomeScreen() {
         )}
 
         {/* ─── Coleções curadas ─── */}
-        <SectionHeader title="Coleções" className="mt-4" />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 4 }}
-        >
-          {COLLECTIONS.map((col) => (
-            <CollectionPreviewCard
-              key={col.id}
-              collection={col}
-              onPress={() => router.push(`/collection/${col.id}` as never)}
-            />
-          ))}
-        </ScrollView>
+        <SectionHeader title={t('home.collections')} className="mt-4" />
+        <View style={{ height: 220 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 4 }}
+          >
+            {COLLECTIONS.map((col) => (
+              <CollectionPreviewCard
+                key={col.id}
+                collection={col}
+                onPress={() => router.push(`/collection/${col.id}` as never)}
+              />
+            ))}
+          </ScrollView>
+        </View>
 
         {/* ─── Feed dos seguidos ─── */}
-        <SectionHeader title="Seguindo" className="mt-4" />
+        <SectionHeader title={t('home.following')} className="mt-4" />
         {feed.isLoading ? (
           <View className="px-5 gap-3">
             {Array.from({ length: 2 }).map((_, i) => (
@@ -171,11 +180,11 @@ export default function HomeScreen() {
           </View>
         ) : (feed.data?.length ?? 0) === 0 ? (
           <EmptyState
-            title="Nenhuma review ainda"
-            subtitle="Siga outros jogadores na busca para ver as reviews deles aqui."
+            title={t('home.noReviewsYet')}
+            subtitle={t('home.noReviewsSubtitle')}
             action={
               <Button
-                label="Buscar jogadores"
+                label={t('home.findPlayers')}
                 size="sm"
                 variant="secondary"
                 onPress={() => router.push('/(tabs)/search' as never)}
@@ -195,14 +204,14 @@ export default function HomeScreen() {
         {!recommendations.isLoading && genres.length === 0 && (
           <View className="mx-5 mt-2 rounded-xl bg-bg-surface border border-border-accent p-4">
             <Text className="text-body text-text-primary font-medium">
-              Personalize suas recomendações
+              {t('home.personalizeTitle')}
             </Text>
             <Text className="text-caption text-text-secondary mt-1">
-              Adicione gêneros favoritos no seu perfil para ver jogos que combinam com você.
+              {t('home.personalizeSubtitle')}
             </Text>
             <View className="mt-3">
               <Button
-                label="Ir para o perfil"
+                label={t('home.goToProfile')}
                 size="sm"
                 variant="secondary"
                 onPress={() => router.push('/(tabs)/profile')}
@@ -281,12 +290,13 @@ function SkeletonCard() {
 }
 
 function ErrorRow({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation();
   return (
     <View className="px-5 py-3 flex-row items-center gap-3">
       <Text className="text-caption text-text-secondary flex-1">
-        Não foi possível carregar os jogos.
+        {t('home.couldNotLoadGames')}
       </Text>
-      <Button label="Tentar novamente" size="sm" variant="ghost" onPress={onRetry} />
+      <Button label={t('common.retry')} size="sm" variant="ghost" onPress={onRetry} />
     </View>
   );
 }
@@ -306,6 +316,7 @@ function FeedList({
 }) {
   const reviewIds = items.map((i) => i.id);
   const { data: likesMap } = useBatchLikes(reviewIds);
+  const { data: commentsMap } = useBatchCommentCounts(reviewIds);
   const like = useLikeReview();
   const unlike = useUnlikeReview();
 
@@ -313,6 +324,7 @@ function FeedList({
     <View className="px-5 gap-3">
       {items.map((item, index) => {
         const likeData = likesMap?.[item.id];
+        const commentsCount = commentsMap?.[item.id] ?? 0;
         return (
           <Animated.View
             key={item.id}
@@ -322,6 +334,7 @@ function FeedList({
             item={item}
             liked={likeData?.liked ?? false}
             likesCount={likeData?.count ?? 0}
+            commentsCount={commentsCount}
             onGamePress={onGamePress}
             onUserPress={onUserPress}
             onReviewPress={onReviewPress}
@@ -344,6 +357,7 @@ function FeedCard({
   item,
   liked,
   likesCount,
+  commentsCount,
   onGamePress,
   onUserPress,
   onReviewPress,
@@ -352,6 +366,7 @@ function FeedCard({
   item: FeedItem;
   liked: boolean;
   likesCount: number;
+  commentsCount: number;
   onGamePress: (rawgId: number) => void;
   onUserPress: (userId: string) => void;
   onReviewPress: (reviewId: string) => void;
@@ -384,6 +399,8 @@ function FeedCard({
         liked={liked}
         likesCount={likesCount}
         onLikePress={onLikePress}
+        commentsCount={commentsCount}
+        onCommentPress={() => onReviewPress(item.id)}
         tags={[
           ...(item.completed ? [{ label: 'Completou', variant: 'success' as const }] : []),
           ...(item.has_spoiler ? [{ label: 'Spoiler', variant: 'danger' as const }] : []),
@@ -398,6 +415,7 @@ function FeedCard({
 // ─── NotificationBell ────────────────────────────────────────────────────────
 
 function NotificationBell({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation();
   const { data: unreadCount } = useUnreadCount();
   const count = unreadCount ?? 0;
 
@@ -406,7 +424,7 @@ function NotificationBell({ onPress }: { onPress: () => void }) {
       onPress={onPress}
       hitSlop={8}
       accessibilityRole="button"
-      accessibilityLabel={count > 0 ? `${count} notificações novas` : 'Notificações'}
+      accessibilityLabel={count > 0 ? t('home.notificationsNew', { count }) : t('home.notifications')}
       style={{
         width: 40,
         height: 40,
@@ -478,9 +496,92 @@ const listContentStyle: ViewStyle = {
   paddingBottom: 4,
 };
 
-function getGreeting(): string {
+// ─── DiscoverPromoCard ───────────────────────────────────────────────────────
+// Card destacado na home que abre o swipe deck.
+
+function DiscoverPromoCard({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <View className="mx-5 mt-4">
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={t('discover.homeCardTitle')}
+        style={({ pressed }) => ({
+          borderRadius: 16,
+          overflow: 'hidden',
+          opacity: pressed ? 0.85 : 1,
+        })}
+      >
+        <View
+          style={{
+            backgroundColor: tokens.color.brand.primary,
+            padding: 18,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 14,
+          }}
+        >
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: 'rgba(255,255,255,0.18)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="sparkles" size={22} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{
+                fontFamily: tokens.fontFamily.medium,
+                fontSize: 16,
+                color: '#fff',
+              }}
+            >
+              {t('discover.homeCardTitle')}
+            </Text>
+            <Text
+              style={{
+                fontFamily: tokens.fontFamily.regular,
+                fontSize: 12,
+                color: 'rgba(255,255,255,0.85)',
+                marginTop: 2,
+              }}
+            >
+              {t('discover.homeCardSubtitle')}
+            </Text>
+          </View>
+          <View
+            style={{
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderRadius: 999,
+              backgroundColor: '#fff',
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: tokens.fontFamily.medium,
+                fontSize: 13,
+                color: tokens.color.brand.primary,
+              }}
+            >
+              {t('discover.homeCardCta')}
+            </Text>
+          </View>
+        </View>
+      </Pressable>
+    </View>
+  );
+}
+
+function getGreeting(t: (key: string) => string): string {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Bom dia';
-  if (hour < 18) return 'Boa tarde';
-  return 'Boa noite';
+  if (hour < 12) return t('home.greetingMorning');
+  if (hour < 18) return t('home.greetingAfternoon');
+  return t('home.greetingEvening');
 }

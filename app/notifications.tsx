@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Avatar, EmptyState } from '@/src/components/ui';
 import { ChevronLeftIcon, HeartIcon, PersonAddIcon, BellIcon, ChatBubbleFilledIcon } from '@/src/components/ui/icons';
@@ -12,6 +13,7 @@ import type { NotificationItem } from '@/src/types/models';
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { data, isLoading } = useNotifications();
   const markAllRead = useMarkAllAsRead();
 
@@ -29,16 +31,16 @@ export default function NotificationsScreen() {
           onPress={() => router.back()}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Voltar"
+          accessibilityLabel={t('common.back')}
           className="flex-row items-center gap-1"
         >
           <ChevronLeftIcon size={20} color={tokens.color.brand.primary} />
-          <Text className="text-body text-brand-primary">Voltar</Text>
+          <Text className="text-body text-brand-primary">{t('common.back')}</Text>
         </Pressable>
       </View>
 
       <View className="px-5 pb-2">
-        <Text className="text-h1 text-text-primary">Notificações</Text>
+        <Text className="text-h1 text-text-primary">{t('notifications.title')}</Text>
       </View>
 
       {isLoading ? (
@@ -59,8 +61,8 @@ export default function NotificationsScreen() {
           ListEmptyComponent={
             <EmptyState
               icon={<BellIcon size={28} color={tokens.color.text.tertiary} />}
-              title="Nada por aqui ainda"
-              subtitle="Quando alguém curtir suas reviews ou te seguir, aparece aqui."
+              title={t('notifications.emptyTitle')}
+              subtitle={t('notifications.emptySubtitle')}
             />
           }
         />
@@ -73,6 +75,7 @@ export default function NotificationsScreen() {
 
 function NotificationRow({ notification }: { notification: NotificationItem }) {
   const router = useRouter();
+  const { t } = useTranslation();
   const { type, actor, review, created_at, is_read } = notification;
   const displayName = actor.display_name ?? actor.username;
 
@@ -128,10 +131,10 @@ function NotificationRow({ notification }: { notification: NotificationItem }) {
         <Text className="text-body text-text-primary" numberOfLines={2}>
           <Text style={{ fontFamily: tokens.fontFamily.medium }}>{displayName}</Text>
           {type === 'follow'
-            ? ' começou a te seguir'
+            ? t('notifications.startedFollowing')
             : type === 'comment'
-              ? ` comentou na sua review de ${review?.game_title ?? 'um jogo'}`
-              : ` curtiu sua review de ${review?.game_title ?? 'um jogo'}`}
+              ? t('notifications.commentedOnReview', { title: review?.game_title ?? t('notifications.aGame') })
+              : t('notifications.likedYourReview', { title: review?.game_title ?? t('notifications.aGame') })}
         </Text>
         <Text className="text-caption text-text-secondary mt-0.5">
           {relativeTime(created_at)}

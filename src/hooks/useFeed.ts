@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { hapticMedium } from '@/src/utils/haptics';
+import { track } from '@/src/lib/analytics';
 import {
   getFeed,
   followUser,
@@ -54,6 +55,7 @@ export function useFollowUser() {
     mutationFn: (targetId: string) => followUser(targetId),
     onMutate: () => hapticMedium(),
     onSuccess: (_, targetId) => {
+      track('user_followed', { target_user_id: targetId });
       queryClient.invalidateQueries({ queryKey: feedKeys.following(targetId) });
       queryClient.invalidateQueries({ queryKey: feedKeys.feed });
       queryClient.invalidateQueries({ queryKey: feedKeys.followCounts(targetId) });
@@ -67,6 +69,7 @@ export function useUnfollowUser() {
     mutationFn: (targetId: string) => unfollowUser(targetId),
     onMutate: () => hapticMedium(),
     onSuccess: (_, targetId) => {
+      track('user_unfollowed', { target_user_id: targetId });
       queryClient.invalidateQueries({ queryKey: feedKeys.following(targetId) });
       queryClient.invalidateQueries({ queryKey: feedKeys.feed });
       queryClient.invalidateQueries({ queryKey: feedKeys.followCounts(targetId) });

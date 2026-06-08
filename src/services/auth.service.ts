@@ -1,14 +1,27 @@
 import type { Session, User } from '@supabase/supabase-js';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { supabase } from '@/src/lib/supabase';
 
-// Configura o Google Sign-In uma vez no carregamento do módulo.
-// webClientId é obrigatório para o Supabase validar o token.
-GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-});
+// Google Sign-In requer um dev build com módulo nativo (não funciona em Expo Go).
+// Carregamos preguiçosamente e ignoramos erro caso o módulo não esteja disponível.
+type GoogleSigninModule = typeof import('@react-native-google-signin/google-signin');
+let googleSignin: GoogleSigninModule['GoogleSignin'] | null = null;
+
+function getGoogleSignin() {
+  if (googleSignin) return googleSignin;
+  try {
+    const mod = require('@react-native-google-signin/google-signin') as GoogleSigninModule;
+    mod.GoogleSignin.configure({
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    });
+    googleSignin = mod.GoogleSignin;
+    return googleSignin;
+  } catch {
+    // Native module ausente (Expo Go). Login com Google ficará indisponível.
+    return null;
+  }
+}
 
 export type AuthUser = User;
 export type AuthSession = Session;
@@ -60,6 +73,13 @@ export async function getSession(): Promise<AuthSession | null> {
  * Lança erro se o usuário cancelar ou faltar configuração.
  */
 export async function signInWithGoogle(): Promise<void> {
+  const GoogleSignin = getGoogleSignin();
+  if (!GoogleSignin) {
+    throw new Error(
+      'Login com Google requer a versão completa do app (não funciona no Expo Go).',
+    );
+  }
+
   // Garante que o Google Play Services está disponível (Android)
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 

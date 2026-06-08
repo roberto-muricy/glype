@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import {
   FlatList,
   Pressable,
@@ -8,9 +8,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { track } from '@/src/lib/analytics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import { useCollectionLabels } from '@/src/i18n/useCollectionLabels';
 import { EmptyState, Skeleton } from '@/src/components/ui';
 import { GameCard } from '@/src/components/domain';
 import { useCollection } from '@/src/hooks/useGames';
@@ -49,8 +52,17 @@ const renderSkeletonItem: ListRenderItem<Game> = ({ index }) => (
 export default function CollectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const collection = getCollectionById(id ?? '');
+  const { title, subtitle } = useCollectionLabels(collection);
   const { data, isLoading, isError } = useCollection(id ?? '', 40);
+
+  // Track screen view (uma vez por sessão de tela)
+  useEffect(() => {
+    if (collection?.id) {
+      track('collection_opened', { collection_id: collection.id });
+    }
+  }, [collection?.id]);
 
   const handleGamePress = useCallback(
     (game: Game) => {
@@ -86,7 +98,10 @@ export default function CollectionScreen() {
   if (!collection) {
     return (
       <SafeAreaView className="flex-1 bg-bg-primary" edges={['top']}>
-        <EmptyState title="Coleção não encontrada" subtitle="Essa lista não existe." />
+        <EmptyState
+          title={t('collection.notFoundTitle')}
+          subtitle={t('collection.notFoundSubtitle')}
+        />
       </SafeAreaView>
     );
   }
@@ -105,7 +120,7 @@ export default function CollectionScreen() {
             onPress={() => router.back()}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Voltar"
+            accessibilityLabel={t('common.back')}
             style={{
               width: 32,
               height: 32,
@@ -129,7 +144,7 @@ export default function CollectionScreen() {
                 }}
                 numberOfLines={1}
               >
-                {collection.title}
+                {title}
               </Text>
             </View>
             <Text
@@ -140,8 +155,8 @@ export default function CollectionScreen() {
                 marginTop: 2,
               }}
             >
-              {collection.subtitle}
-              {!isLoading && data && ` · ${data.results.length} jogos`}
+              {subtitle}
+              {!isLoading && data && ` · ${t('collection.gamesCount', { count: data.results.length })}`}
             </Text>
           </View>
         </View>
@@ -151,8 +166,8 @@ export default function CollectionScreen() {
       {isError ? (
         <View className="flex-1 items-center justify-center px-5">
           <EmptyState
-            title="Erro ao carregar"
-            subtitle="Não foi possível buscar os jogos dessa coleção."
+            title={t('collection.errorTitle')}
+            subtitle={t('collection.errorSubtitle')}
           />
         </View>
       ) : (
@@ -168,8 +183,8 @@ export default function CollectionScreen() {
           ListEmptyComponent={
             !isLoading ? (
               <EmptyState
-                title="Nenhum jogo encontrado"
-                subtitle="Essa coleção ainda não tem jogos disponíveis."
+                title={t('collection.emptyTitle')}
+                subtitle={t('collection.emptySubtitle')}
               />
             ) : null
           }

@@ -38,20 +38,51 @@ export async function createReview(gameId: string, draft: ReviewDraft): Promise<
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Não autenticado');
 
+  // Normaliza body vazio/whitespace para NULL — review sem texto é válida (só nota).
+  const normalizedBody = draft.body?.trim() ? draft.body.trim() : null;
+
   const { data, error } = await supabase
     .from('reviews')
-    .insert({ ...draft, game_id: gameId, user_id: user.id })
+    .insert({ ...draft, body: normalizedBody, game_id: gameId, user_id: user.id })
     .select()
     .single();
 
   if (error) throw new Error(error.message);
+
+  // Adiciona o jogo automaticamente à biblioteca se ainda não estiver lá.
+  // Quem escreve uma review jogou (ou está jogando) o jogo.
+  // Não sobrescreve um status existente.
+  try {
+    const { data: existing } = await supabase
+      .from('user_games')
+      .select('status')
+      .eq('user_id', user.id)
+      .eq('game_id', gameId)
+      .maybeSingle();
+
+    if (!existing) {
+      const status = draft.completed ? 'played' : 'playing';
+      await supabase
+        .from('user_games')
+        .insert({ user_id: user.id, game_id: gameId, status });
+    }
+  } catch {
+    // Não falha a criação da review se a sincronização com a biblioteca der erro.
+  }
+
   return data as Review;
 }
 
 export async function updateReview(reviewId: string, draft: Partial<ReviewDraft>): Promise<Review> {
+  // Mesma normalização do create — body vazio vira NULL.
+  const normalized: Partial<ReviewDraft> = { ...draft };
+  if ('body' in draft) {
+    normalized.body = draft.body?.trim() ? draft.body.trim() : null;
+  }
+
   const { data, error } = await supabase
     .from('reviews')
-    .update(draft)
+    .update(normalized)
     .eq('id', reviewId)
     .select()
     .single();

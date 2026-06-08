@@ -9,20 +9,27 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/src/hooks/useAuth';
 import { Button, Input, Toast } from '@/src/components/ui';
 import { tokens } from '@/src/theme/tokens';
 
-function validate(username: string, email: string, password: string): string | null {
-  if (username.trim().length < 3) return 'Username precisa ter no mínimo 3 caracteres';
-  if (!/^[a-z0-9_]+$/i.test(username.trim())) return 'Username só pode ter letras, números e _';
-  if (!email.includes('@')) return 'Email inválido';
-  if (password.length < 6) return 'Senha precisa ter no mínimo 6 caracteres';
+function validate(
+  username: string,
+  email: string,
+  password: string,
+  t: (key: string) => string,
+): string | null {
+  if (username.trim().length < 3) return t('auth.validationUsernameMin');
+  if (!/^[a-z0-9_]+$/i.test(username.trim())) return t('auth.validationUsernameChars');
+  if (!email.includes('@')) return t('auth.validationEmailInvalid');
+  if (password.length < 6) return t('auth.validationPasswordMin');
   return null;
 }
 
 export default function SignupScreen() {
   const { signUp } = useAuth();
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,7 +40,7 @@ export default function SignupScreen() {
   const clearError = () => setError(null);
 
   const onSubmit = async (): Promise<void> => {
-    const validationError = validate(username, email, password);
+    const validationError = validate(username, email, password, t);
     if (validationError) { setError(validationError); return; }
 
     setError(null);
@@ -42,7 +49,7 @@ export default function SignupScreen() {
       await signUp({ email: email.trim(), password, username: username.trim() });
       setSuccess(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erro ao criar conta');
+      setError(e instanceof Error ? e.message : t('auth.errorSigningUp'));
     } finally {
       setSubmitting(false);
     }
@@ -68,9 +75,9 @@ export default function SignupScreen() {
           <View className="gap-8 py-8">
             {/* Header */}
             <View className="gap-2">
-              <Text className="text-display-1 text-text-primary">Criar conta</Text>
+              <Text className="text-display-1 text-text-primary">{t('auth.signUp')}</Text>
               <Text className="text-body-lg text-text-secondary">
-                Junte-se à comunidade Glype
+                {t('auth.signupSubtitle')}
               </Text>
             </View>
 
@@ -79,11 +86,11 @@ export default function SignupScreen() {
               <View className="gap-4">
                 <Toast
                   variant="success"
-                  title="Conta criada!"
-                  description="Verifique seu email para confirmar o cadastro antes de fazer login."
+                  title={t('auth.accountCreated')}
+                  description={t('auth.accountCreatedDesc')}
                 />
                 <Link href="/(auth)/login" asChild>
-                  <Button label="Ir para o login" size="lg" />
+                  <Button label={t('auth.goToLogin')} size="lg" />
                 </Link>
               </View>
             ) : (
@@ -92,18 +99,18 @@ export default function SignupScreen() {
                 <View className="gap-3">
                   <View>
                     <Input
-                      placeholder="Username"
+                      placeholder={t('auth.username')}
                       value={username}
                       onChangeText={(v) => { setUsername(v); clearError(); }}
                       autoCapitalize="none"
                       autoComplete="username"
                     />
                     <Text className="text-caption text-text-tertiary mt-1 ml-1">
-                      Letras, números e _ · mínimo 3 caracteres
+                      {t('auth.usernameHint')}
                     </Text>
                   </View>
                   <Input
-                    placeholder="Email"
+                    placeholder={t('auth.email')}
                     value={email}
                     onChangeText={(v) => { setEmail(v); clearError(); }}
                     autoCapitalize="none"
@@ -111,7 +118,7 @@ export default function SignupScreen() {
                     autoComplete="email"
                   />
                   <Input
-                    placeholder="Senha"
+                    placeholder={t('auth.password')}
                     value={password}
                     onChangeText={(v) => { setPassword(v); clearError(); }}
                     secureTextEntry
@@ -125,14 +132,14 @@ export default function SignupScreen() {
                 {/* Ações */}
                 <View className="gap-3">
                   <Button
-                    label={submitting ? 'Criando conta…' : 'Criar conta'}
+                    label={submitting ? t('auth.creatingAccount') : t('auth.signUp')}
                     onPress={onSubmit}
                     loading={submitting}
                     disabled={submitting || !username || !email || !password}
                     size="lg"
                   />
                   <Link href="/(auth)/login" asChild>
-                    <Button variant="ghost" label="Já tem conta? Faça login" />
+                    <Button variant="ghost" label={t('auth.hasAccountLogin')} />
                   </Link>
                 </View>
               </>
