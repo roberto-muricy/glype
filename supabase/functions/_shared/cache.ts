@@ -41,7 +41,13 @@ export async function getCache<T>(key: string): Promise<T | null> {
     .select('payload, expires_at')
     .eq('cache_key', key)
     .maybeSingle<CacheRow>();
-  if (error || !data) return null;
+  // Erro não é miss: tratar os dois igual escondeu por meses que a cache_meta
+  // nem existia em produção. Continua retornando null, mas deixa rastro no log.
+  if (error) {
+    console.error(`[cache] getCache(${key}) falhou:`, error.message);
+    return null;
+  }
+  if (!data) return null;
   if (new Date(data.expires_at).getTime() < Date.now()) return null;
   return data.payload as T;
 }
@@ -53,9 +59,12 @@ export async function setCache(
 ): Promise<void> {
   const supabase = getServiceClient();
   const expires_at = new Date(Date.now() + ttlSeconds * 1000).toISOString();
-  await supabase
+  // supabase-js não lança em erro de query — devolve `error`. Sem checar aqui,
+  // o try/catch de quem chama nunca pega nada.
+  const { error } = await supabase
     .from('cache_meta')
     .upsert({ cache_key: key, payload, expires_at }, { onConflict: 'cache_key' });
+  if (error) throw new Error(`setCache(${key}): ${error.message}`);
 }
 
 export async function withCache<T>(
@@ -69,8 +78,8 @@ export async function withCache<T>(
   // Best-effort: se gravar no cache falhar, retornamos o dado fresco mesmo assim.
   try {
     await setCache(key, fresh, ttlSeconds);
-  } catch (_e) {
-    // ignore
+  } catch (e) {
+    console.error('[cache]', e instanceof Error ? e.message : e);
   }
   return fresh;
 }

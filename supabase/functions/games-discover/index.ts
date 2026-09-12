@@ -6,11 +6,14 @@
 // - Exclui jogos que o usuário já dismissou (game_dismissals)
 // - Exclui jogos que já estão na library (user_games) — não faz sentido sugerir o que já joga
 //
-// Cache: o pool de candidatos depende SÓ do conjunto de gêneros — não do
-// usuário nem da página. É isso que o torna cacheável e compartilhado entre
-// todos os usuários (1h). A exclusão por usuário e o fatiamento por página
-// acontecem depois, em memória. Antes daqui cada request (inclusive cada
-// prefetch de página) fazia 3 chamadas ao vivo na RAWG.
+// Cache: o pool completo de candidatos depende SÓ do conjunto de gêneros — não
+// do usuário nem da página —, então fica 1h em cache, compartilhado por todos.
+// A exclusão por usuário e o fatiamento por página acontecem depois, em memória.
+//
+// Num cache miss a resposta NÃO espera o pool completo: medido em produção,
+// pedir 40 jogos por gênero à RAWG deixava a primeira abertura do deck em ~11s.
+// Respondemos com uma busca do tamanho da página pedida (o mesmo dimensionamento
+// da versão sem cache) e montamos o pool completo em background.
 //
 // Query: GET /games-discover?genres=action,rpg&page=0&page_size=20
 
@@ -20,58 +23,107 @@ import { getGamesByGenre } from '../_shared/rawg.ts';
 import { normalizeRawg } from '../_shared/normalize.ts';
 import {
   getServiceClient,
-  withCache,
+  getCache,
+  setCache,
   makeCacheKey,
   CACHE_TTL,
 } from '../_shared/cache.ts';
 
+// O Edge Runtime do Supabase mantém vivo o que for passado ao waitUntil depois
+// que a resposta sai. Fora dele (ex.: testes locais) o identificador não existe.
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void };
+
 const FALLBACK_GENRES = ['action', 'role-playing-games-rpg', 'adventure'];
 
-/** Teto da RAWG por request. Buscamos o pool cheio de uma vez e paginamos em memória. */
+/** Tamanho do pool completo por gênero (teto da RAWG por request). */
 const POOL_PER_GENRE = 40;
 
 type NormalizedGame = ReturnType<typeof normalizeRawg>;
+type RawgList = Awaited<ReturnType<typeof getGamesByGenre>>['results'];
 
-/**
- * Pool de candidatos pro conjunto de gêneros, em round-robin e deduplicado.
- * Fica atrás do cache: o custo da RAWG é pago uma vez por hora pra toda a base,
- * em vez de uma vez por usuário por página.
- */
-function fetchPool(selectedGenres: string[]): Promise<NormalizedGame[]> {
-  const key = makeCacheKey(['discover', 'pool', selectedGenres.join('+'), POOL_PER_GENRE]);
+/** Pools sendo montados neste isolate — evita buscas repetidas numa rajada de misses. */
+const filling = new Set<string>();
 
-  return withCache(key, CACHE_TTL.discover, async () => {
-    const settled = await Promise.all(
-      selectedGenres.map((g) =>
-        getGamesByGenre(g, POOL_PER_GENRE).then(
-          (r) => r.results,
-          () => null, // null = esse gênero falhou
-        ),
+function poolKey(genres: string[]): string {
+  return makeCacheKey(['discover', 'pool', genres.join('+'), POOL_PER_GENRE]);
+}
+
+function logError(context: string, e: unknown): void {
+  console.error(`[games-discover] ${context}:`, e instanceof Error ? e.message : e);
+}
+
+function runInBackground(task: Promise<unknown>): void {
+  if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(task);
+}
+
+/** Listas por gênero. Lança só se TODOS falharem: pool vazio não serve pra nada. */
+async function fetchGenreLists(genres: string[], perGenre: number): Promise<RawgList[]> {
+  const settled = await Promise.all(
+    genres.map((g) =>
+      getGamesByGenre(g, perGenre).then(
+        (r) => r.results,
+        () => null, // null = esse gênero falhou
       ),
-    );
+    ),
+  );
+  if (settled.every((list) => list === null)) {
+    throw new Error('RAWG indisponível para todos os gêneros');
+  }
+  return settled.map((list) => list ?? []);
+}
 
-    // Se TODOS falharam, joga o erro: `withCache` não grava nada e o próximo
-    // request tenta de novo. Gravar um pool vazio prenderia o deck por 1h.
-    if (settled.every((list) => list === null)) {
-      throw new Error('RAWG indisponível para todos os gêneros');
+/** Interleave entre gêneros (round-robin) + dedup por rawg_id. */
+function buildPool(lists: RawgList[]): NormalizedGame[] {
+  const maxLen = Math.max(...lists.map((l) => l.length), 0);
+  const seen = new Set<number>();
+  const pool: NormalizedGame[] = [];
+  for (let i = 0; i < maxLen; i++) {
+    for (const list of lists) {
+      const game = list[i];
+      if (!game || seen.has(game.id)) continue;
+      seen.add(game.id);
+      pool.push(normalizeRawg(game));
     }
+  }
+  return pool;
+}
 
-    // Interleave entre gêneros (round-robin) + dedup por rawg_id.
-    const lists = settled.map((list) => list ?? []);
-    const maxLen = Math.max(...lists.map((l) => l.length), 0);
-    const seen = new Set<number>();
-    const pool: NormalizedGame[] = [];
+/** Monta o pool completo e grava no cache sem segurar a resposta. */
+function fillPoolInBackground(key: string, genres: string[]): void {
+  if (filling.has(key)) return;
+  filling.add(key);
+  runInBackground(
+    fetchGenreLists(genres, POOL_PER_GENRE)
+      .then((lists) => setCache(key, buildPool(lists), CACHE_TTL.discover))
+      .catch((e) => logError(`preenchimento do pool ${key}`, e))
+      .finally(() => filling.delete(key)),
+  );
+}
 
-    for (let i = 0; i < maxLen; i++) {
-      for (const list of lists) {
-        const game = list[i];
-        if (!game || seen.has(game.id)) continue;
-        seen.add(game.id);
-        pool.push(normalizeRawg(game));
-      }
+/** rawg_ids que o usuário já dismissou ou tem na biblioteca. */
+async function getExcludedRawgIds(userId: string): Promise<Set<number>> {
+  const admin = getServiceClient();
+  const excluded = new Set<number>();
+  try {
+    const [{ data: dismissed }, { data: library }] = await Promise.all([
+      admin
+        .from('game_dismissals')
+        .select('game_id, games:games!inner(rawg_id)')
+        .eq('user_id', userId),
+      admin
+        .from('user_games')
+        .select('game_id, games:games!inner(rawg_id)')
+        .eq('user_id', userId),
+    ]);
+    for (const row of [...(dismissed ?? []), ...(library ?? [])]) {
+      const rid = (row as { games?: { rawg_id?: number | null } }).games?.rawg_id;
+      if (rid != null) excluded.add(rid);
     }
-    return pool;
-  });
+  } catch (e) {
+    // Sem filtro é melhor que sem deck — pior caso mostra jogos repetidos.
+    logError('busca de exclusões', e);
+  }
+  return excluded;
 }
 
 Deno.serve(async (req: Request) => {
@@ -111,48 +163,52 @@ Deno.serve(async (req: Request) => {
   const selectedGenres = genres.slice(0, 3).sort();
 
   try {
-    // 3. Pool (cacheado) + exclusões do usuário, em paralelo — são
-    //    independentes, não faz sentido serializar.
-    const admin = getServiceClient();
-
-    const [pool, excludedRawgIds] = await Promise.all([
-      fetchPool(selectedGenres),
-      (async () => {
-        const excluded = new Set<number>();
-        try {
-          const [{ data: dismissed }, { data: library }] = await Promise.all([
-            admin
-              .from('game_dismissals')
-              .select('game_id, games:games!inner(rawg_id)')
-              .eq('user_id', userId),
-            admin
-              .from('user_games')
-              .select('game_id, games:games!inner(rawg_id)')
-              .eq('user_id', userId),
-          ]);
-          for (const row of [...(dismissed ?? []), ...(library ?? [])]) {
-            const rid = (row as { games?: { rawg_id?: number | null } }).games?.rawg_id;
-            if (rid != null) excluded.add(rid);
-          }
-        } catch (_e) {
-          // Sem filtro é melhor que sem deck — pior caso mostra jogos repetidos.
-        }
-        return excluded;
-      })(),
+    // 3. Cache e exclusões em paralelo — são independentes e ambos rápidos.
+    const key = poolKey(selectedGenres);
+    const [cachedPool, excludedRawgIds] = await Promise.all([
+      getCache<NormalizedGame[]>(key),
+      getExcludedRawgIds(userId),
     ]);
 
-    // 4. Aplica exclusão e fatia a página — tudo em memória.
+    const start = page * pageSize;
+    const end = start + pageSize;
+    let pool: NormalizedGame[];
+    let poolIsPartial = false;
+
+    if (cachedPool) {
+      pool = cachedPool;
+    } else {
+      // 4. Miss: busca só o que esta página precisa, já descontando as exclusões.
+      const perGenre = Math.min(
+        POOL_PER_GENRE,
+        Math.ceil((end + excludedRawgIds.size) / selectedGenres.length),
+      );
+      pool = buildPool(await fetchGenreLists(selectedGenres, perGenre));
+
+      if (perGenre < POOL_PER_GENRE) {
+        poolIsPartial = true;
+        fillPoolInBackground(key, selectedGenres);
+      } else {
+        // Já veio no tamanho cheio: só grava, sem refazer a busca.
+        runInBackground(
+          setCache(key, pool, CACHE_TTL.discover).catch((e) => logError(`gravação do pool ${key}`, e)),
+        );
+      }
+    }
+
+    // 5. Aplica exclusão e fatia a página — tudo em memória.
     const available = pool.filter(
       (g) => g.rawg_id != null && !excludedRawgIds.has(g.rawg_id),
     );
-    const start = page * pageSize;
-    const slice = available.slice(start, start + pageSize);
+    const slice = available.slice(start, end);
 
     return jsonResponse({
       results: slice,
       count: slice.length,
       page,
-      has_more: available.length > start + pageSize,
+      // Com pool parcial pode haver mais do que buscamos agora — e a próxima
+      // página provavelmente já sai do pool completo.
+      has_more: available.length > end || poolIsPartial,
       genres: selectedGenres,
     });
   } catch (err) {
