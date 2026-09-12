@@ -26,6 +26,7 @@ export const CACHE_TTL = {
   detail: 60 * 60 * 24 * 7, // 7d
   trending: 60 * 60 * 6, // 6h
   recommendations: 60 * 60 * 24, // 24h
+  discover: 60 * 60 * 1, // 1h — pool do swipe deck, curto pra manter freshness
 } as const;
 
 interface CacheRow {
