@@ -36,6 +36,22 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-router',
     'expo-secure-store',
     'expo-apple-authentication',
+    [
+      'expo-build-properties',
+      {
+        ios: {
+          // O GoogleSignIn 9.2 puxa o AppCheckCore 11.3, um pod Swift que depende
+          // de GoogleUtilities e RecaptchaInterop — e esses dois não definem
+          // módulos. Sem modular headers o CocoaPods recusa integrá-los como
+          // biblioteca estática e o build de iOS quebra no `pod install`.
+          // (Os pods do Google não ficam travados: ios/ é gerado a cada build.)
+          extraPods: [
+            { name: 'GoogleUtilities', modular_headers: true },
+            { name: 'RecaptchaInterop', modular_headers: true },
+          ],
+        },
+      },
+    ],
     // '@sentry/react-native/expo' removido até configurar SENTRY_AUTH_TOKEN no EAS.
     // Sentry runtime continua funcionando via Sentry.init() em src/lib/sentry.ts.
     // O plugin é só pra upload de source maps no build — sem auth token, ele trava o build Android.
