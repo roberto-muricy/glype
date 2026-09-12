@@ -4,7 +4,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Glype',
   slug: 'glype',
-  version: '1.1.0',
+  version: '1.1.1',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'glype',

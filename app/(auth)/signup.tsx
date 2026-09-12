@@ -103,7 +103,12 @@ export default function SignupScreen() {
                       value={username}
                       onChangeText={(v) => { setUsername(v); clearError(); }}
                       autoCapitalize="none"
+                      // Username/email não são palavras de dicionário: a
+                      // autocorreção do iOS as reescreve e quebra o cadastro.
+                      autoCorrect={false}
+                      spellCheck={false}
                       autoComplete="username"
+                      textContentType="username"
                     />
                     <Text className="text-caption text-text-tertiary mt-1 ml-1">
                       {t('auth.usernameHint')}
@@ -114,15 +119,22 @@ export default function SignupScreen() {
                     value={email}
                     onChangeText={(v) => { setEmail(v); clearError(); }}
                     autoCapitalize="none"
+                    autoCorrect={false}
+                    spellCheck={false}
                     keyboardType="email-address"
                     autoComplete="email"
+                    textContentType="emailAddress"
                   />
                   <Input
                     placeholder={t('auth.password')}
                     value={password}
                     onChangeText={(v) => { setPassword(v); clearError(); }}
                     secureTextEntry
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    spellCheck={false}
                     autoComplete="password-new"
+                    textContentType="newPassword"
                     onSubmitEditing={onSubmit}
                     returnKeyType="done"
                   />

@@ -117,15 +117,24 @@ export default function LoginScreen() {
               value={email}
               onChangeText={(v) => { setEmail(v); setError(null); }}
               autoCapitalize="none"
+              // Sem isso o iOS "corrige" o email enquanto o usuário digita
+              // (ex: robertomuricy → robertomuricu) e o login falha.
+              autoCorrect={false}
+              spellCheck={false}
               keyboardType="email-address"
               autoComplete="email"
+              textContentType="emailAddress"
             />
             <Input
               placeholder={t('auth.password')}
               value={password}
               onChangeText={(v) => { setPassword(v); setError(null); }}
               secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
               autoComplete="password"
+              textContentType="password"
               onSubmitEditing={onSubmit}
               returnKeyType="done"
             />
