@@ -9,7 +9,7 @@
 // - Prefetch automático quando faltam 5 cards na queue
 // - Swipe right → wishlist | left → dismiss | up/tap → game detail
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -36,11 +36,14 @@ export default function DiscoverScreen() {
   const genres = profile?.favorite_genres ?? [];
 
   const { queue, isLoading, error, hasMore, prefetchMore, pop } = useDiscoverQueue(genres);
-  const dismissMutation = useDismissGame();
-  const wishlistMutation = useWishlistFromDiscover();
+  const { mutate: dismissGame } = useDismissGame();
+  const { mutate: addToWishlist } = useWishlistFromDiscover();
 
   const [toast, setToast] = useState<{ variant: 'success' | 'info'; title: string } | null>(null);
   const [swipeCount, setSwipeCount] = useState(0);
+  // Ref espelha o contador: lê a posição dentro do handler sem colocar
+  // `swipeCount` nas deps (o que trocaria a identidade do callback a cada swipe).
+  const swipeCountRef = useRef(0);
 
   // Track open event uma vez
   useEffect(() => {
@@ -69,34 +72,30 @@ export default function DiscoverScreen() {
   }, [toast]);
 
   const handleSwipe = useCallback(
-    async (game: Game, direction: SwipeDirection) => {
-      if (game.rawg_id == null) {
-        pop(game.rawg_id);
-        return;
-      }
-      const position = swipeCount;
-      setSwipeCount((c) => c + 1);
+    (game: Game, direction: SwipeDirection) => {
+      const rawgId = game.rawg_id;
+      // Tira o card da fila ANTES de qualquer I/O. Este handler era `async` e
+      // dava `await` na mutation: como ensure-game + getUser + upsert rodam em
+      // sequência, o deck ficava 1-3s sem avançar e o usuário repetia o gesto
+      // achando que tinha travado. Nada na UI depende do resultado da rede.
+      pop(rawgId);
+      if (rawgId == null) return;
+
+      const position = swipeCountRef.current;
+      swipeCountRef.current += 1;
+      setSwipeCount(swipeCountRef.current);
 
       if (direction === 'right') {
         setToast({ variant: 'success', title: t('discover.wishlistAdded') });
-        try {
-          await wishlistMutation.mutateAsync({ rawgId: game.rawg_id, position });
-        } catch {
-          // ignore — UX continua, sinal pode falhar silenciosamente
-        }
+        addToWishlist({ rawgId, position });
       } else if (direction === 'left') {
-        try {
-          await dismissMutation.mutateAsync({ rawgId: game.rawg_id, position });
-        } catch {
-          // ignore
-        }
+        dismissGame({ rawgId, position });
       } else if (direction === 'up') {
-        track('discover_view_details', { rawg_id: game.rawg_id });
-        router.push(`/game/${game.rawg_id}` as never);
+        track('discover_view_details', { rawg_id: rawgId });
+        router.push(`/game/${rawgId}` as never);
       }
-      pop(game.rawg_id);
     },
-    [pop, swipeCount, t, wishlistMutation, dismissMutation, router],
+    [pop, t, addToWishlist, dismissGame, router],
   );
 
   const handlePressDetails = useCallback(

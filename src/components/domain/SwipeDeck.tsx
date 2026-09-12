@@ -3,17 +3,26 @@
 // Recebe a queue + callbacks. Posiciona os primeiros 3 cards em stack.
 // Quando o card do topo é swipado, ele anima saindo e o próximo "sobe".
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
+import { Image } from 'expo-image';
 import { SwipeCard, type SwipeDirection } from './SwipeCard';
 import type { Game } from '@/src/types/models';
+
+/** Casa com a animação de saída do SwipeCard (withTiming 250ms). */
+const EXIT_DURATION = 240;
+/** Quantos heróis além do stack visível pré-carregar em disco. */
+const PREFETCH_AHEAD = 4;
 
 export interface SwipeDeckProps {
   /** Queue completa (o deck pega os primeiros N). */
   queue: Game[];
-  /** Callback de swipe — recebe o game e a direção. */
+  /**
+   * Callback de swipe. Precisa ser estável (useCallback) e **sincrono**:
+   * qualquer I/O aqui vira congelamento visível do deck.
+   */
   onSwipe: (game: Game, direction: SwipeDirection) => void;
-  /** Callback de tap em "Ver detalhes" no card do topo. */
+  /** Callback de tap em "Ver detalhes" no card do topo. Também precisa ser estável. */
   onPressDetails?: (game: Game) => void;
   /** Quantos cards mostrar empilhados (default 3). */
   visibleCount?: number;
@@ -29,18 +38,40 @@ export function SwipeDeck({
   // fique POR CIMA dos demais (zIndex implícito de render order em RN).
   const visible = useMemo(() => queue.slice(0, visibleCount), [queue, visibleCount]);
 
-  // Tracking de qual card está animando saindo — pra não ficar interativo enquanto sai
-  const [animatingOut, setAnimatingOut] = useState<number | null>(null);
+  // Card que está animando saindo — para de aceitar gestos, mas continua
+  // desenhando o fly-out (por isso não mexemos no `interactive` dele).
+  const [leavingId, setLeavingId] = useState<number | null>(null);
+  // Guard contra repetir o gesto no mesmo card enquanto ele sai: sem isso um
+  // segundo swipe duplicaria a mutation e o contador de posição.
+  const leavingRef = useRef<Set<number>>(new Set());
 
-  const handleSwipe = (game: Game, direction: SwipeDirection) => {
-    if (game.rawg_id == null) return;
-    setAnimatingOut(game.rawg_id);
-    // Pequeno delay pra animação terminar visualmente antes de remover do queue
-    setTimeout(() => {
-      setAnimatingOut(null);
-      onSwipe(game, direction);
-    }, 220);
-  };
+  const handleSwipe = useCallback(
+    (game: Game, direction: SwipeDirection) => {
+      const id = game.rawg_id;
+      if (id == null || leavingRef.current.has(id)) return;
+      leavingRef.current.add(id);
+      setLeavingId(id);
+      // Só a saída visual espera. O `onSwipe` é sincrono e dispara a rede
+      // em background, então a fila avança sempre em ~240ms.
+      setTimeout(() => {
+        onSwipe(game, direction);
+        leavingRef.current.delete(id);
+        setLeavingId((cur) => (cur === id ? null : cur));
+      }, EXIT_DURATION);
+    },
+    [onSwipe],
+  );
+
+  // Aquece o cache dos heróis que ainda não estão montados, pra o card novo
+  // do fundo do stack não entrar com placeholder.
+  useEffect(() => {
+    const urls = queue
+      .slice(visibleCount, visibleCount + PREFETCH_AHEAD)
+      .map((g) => g.background_url ?? g.cover_url)
+      .filter((u): u is string => Boolean(u));
+    if (urls.length === 0) return;
+    Image.prefetch(urls, { cachePolicy: 'memory-disk' }).catch(() => undefined);
+  }, [queue, visibleCount]);
 
   return (
     <View style={{ flex: 1, position: 'relative' }}>
@@ -48,20 +79,17 @@ export function SwipeDeck({
       {visible
         .map((game, idx) => ({ game, idx }))
         .reverse()
-        .map(({ game, idx }) => {
-          const isTop = idx === 0;
-          const isLeaving = animatingOut === game.rawg_id;
-          return (
-            <SwipeCard
-              key={game.rawg_id ?? `${game.slug}-${idx}`}
-              game={game}
-              interactive={isTop && !isLeaving}
-              depth={idx}
-              onSwipe={(direction) => handleSwipe(game, direction)}
-              onPressDetails={isTop ? () => onPressDetails?.(game) : undefined}
-            />
-          );
-        })}
+        .map(({ game, idx }) => (
+          <SwipeCard
+            key={game.rawg_id ?? `${game.slug}-${idx}`}
+            game={game}
+            interactive={idx === 0}
+            acceptsGestures={leavingId !== game.rawg_id}
+            depth={idx}
+            onSwipe={handleSwipe}
+            onPressDetails={onPressDetails}
+          />
+        ))}
     </View>
   );
 }

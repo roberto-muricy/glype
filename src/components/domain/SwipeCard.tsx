@@ -4,7 +4,7 @@
 // Quando `interactive=true`, captura PanGesture e dispara callbacks ao
 // passar do threshold.
 
-import { useEffect } from 'react';
+import { memo, useEffect } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,21 +28,30 @@ export type SwipeDirection = 'left' | 'right' | 'up';
 
 export interface SwipeCardProps {
   game: Game;
-  /** true = topo do stack, captura gestos. false = atrás, decorativo. */
+  /** true = topo do stack (usa os shared values do gesto). false = atrás, decorativo. */
   interactive: boolean;
-  /** Profundidade no stack (0 = topo). Define escala/opacity quando não-interativo. */
+  /**
+   * false enquanto o card anima saindo: continua desenhando a animação de
+   * saída, mas para de aceitar gestos novos. Separado de `interactive` porque
+   * desligar os dois juntos cancelaria o fly-out no meio.
+   */
+  acceptsGestures?: boolean;
+  /** Profundidade no stack (0 = topo). Define escala/opacity/offset. */
   depth?: number;
-  onSwipe?: (direction: SwipeDirection) => void;
-  onPressDetails?: () => void;
+  /** Recebem o próprio game pra o deck passar callbacks estáveis (senão o memo
+   *  quebra a cada render e o GestureDetector é reanexado). */
+  onSwipe?: (game: Game, direction: SwipeDirection) => void;
+  onPressDetails?: (game: Game) => void;
 }
 
 const SWIPE_THRESHOLD_X = 100;
 const SWIPE_THRESHOLD_Y = 80;
 const ROTATION_FACTOR = 0.06;
 
-export function SwipeCard({
+function SwipeCardComponent({
   game,
   interactive,
+  acceptsGestures = true,
   depth = 0,
   onSwipe,
   onPressDetails,
@@ -52,6 +61,11 @@ export function SwipeCard({
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const cardOpacity = useSharedValue(1);
+  // Flag na UI thread: evita repetir o haptic a cada frame após o threshold.
+  const hasVibrated = useSharedValue(false);
+  // Profundidade animada — faz o card de trás "subir" suavemente ao ser promovido
+  // em vez de pular de escala 0.95 pra 1 num frame.
+  const depthProgress = useSharedValue(depth);
 
   // Reset valores quando o card volta a ser interativo (próximo do stack subiu).
   useEffect(() => {
@@ -59,20 +73,27 @@ export function SwipeCard({
       translateX.value = 0;
       translateY.value = 0;
       cardOpacity.value = 1;
+      hasVibrated.value = false;
     }
-  }, [interactive, cardOpacity, translateX, translateY]);
+  }, [interactive, cardOpacity, hasVibrated, translateX, translateY]);
+
+  useEffect(() => {
+    depthProgress.value = withTiming(depth, { duration: 180 });
+  }, [depth, depthProgress]);
 
   // ─── Estilo animado ─────────────────────────────────────────────────────────
 
   const animatedStyle = useAnimatedStyle(() => {
+    const d = depthProgress.value;
+    const scale = 1 - d * 0.05;
+    const stackOffset = d * 8;
+    const depthOpacity = 1 - d * 0.3;
+
     if (!interactive) {
-      // Cards atrás: escala/opacity decrescente
-      const scale = 1 - depth * 0.05;
-      const opacity = 1 - depth * 0.3;
-      const translateY = depth * 8;
+      // Cards atrás: só o efeito de pilha.
       return {
-        transform: [{ scale }, { translateY }],
-        opacity,
+        transform: [{ scale }, { translateY: stackOffset }],
+        opacity: depthOpacity,
       };
     }
     const rotateZ = interpolate(
@@ -84,10 +105,11 @@ export function SwipeCard({
     return {
       transform: [
         { translateX: translateX.value },
-        { translateY: translateY.value },
+        { translateY: translateY.value + stackOffset },
         { rotateZ: `${rotateZ}deg` },
+        { scale },
       ],
-      opacity: cardOpacity.value,
+      opacity: cardOpacity.value * depthOpacity,
     };
   });
 
@@ -109,7 +131,7 @@ export function SwipeCard({
 
   const triggerSwipe = (direction: SwipeDirection) => {
     hapticMedium();
-    onSwipe?.(direction);
+    onSwipe?.(game, direction);
   };
 
   const haptic = () => {
@@ -117,18 +139,17 @@ export function SwipeCard({
   };
 
   const pan = Gesture.Pan()
-    .enabled(interactive)
+    .enabled(interactive && acceptsGestures)
     .onUpdate((e) => {
       translateX.value = e.translationX;
       translateY.value = e.translationY;
-      // Haptic sutil ao cruzar o threshold pela primeira vez
-      if (
-        (Math.abs(e.translationX) > SWIPE_THRESHOLD_X * 0.6 ||
-          e.translationY < -SWIPE_THRESHOLD_Y * 0.6) &&
-        cardOpacity.value === 1
-      ) {
-        runOnJS(haptic)();
-        cardOpacity.value = 0.99; // marca como "ja vibrou nessa sessão"
+      // Haptic sutil ao cruzar o threshold — uma vez por travessia.
+      const pastThreshold =
+        Math.abs(e.translationX) > SWIPE_THRESHOLD_X * 0.6 ||
+        e.translationY < -SWIPE_THRESHOLD_Y * 0.6;
+      if (pastThreshold !== hasVibrated.value) {
+        hasVibrated.value = pastThreshold;
+        if (pastThreshold) runOnJS(haptic)();
       }
     })
     .onEnd((e) => {
@@ -158,9 +179,9 @@ export function SwipeCard({
         return;
       }
       // Spring back
+      hasVibrated.value = false;
       translateX.value = withSpring(0, { damping: 15, stiffness: 200 });
       translateY.value = withSpring(0, { damping: 15, stiffness: 200 });
-      cardOpacity.value = withTiming(1, { duration: 100 });
     });
 
   // ─── Render ─────────────────────────────────────────────────────────────────
@@ -193,6 +214,8 @@ export function SwipeCard({
             style={{ width: '100%', height: '100%' }}
             contentFit="cover"
             cachePolicy="memory-disk"
+            recyclingKey={game.slug ?? String(game.rawg_id)}
+            priority={interactive ? 'high' : 'normal'}
             transition={120}
             accessibilityIgnoresInvertColors
           />
@@ -354,7 +377,7 @@ export function SwipeCard({
           {/* Tap pra detalhes */}
           {interactive && onPressDetails && (
             <Pressable
-              onPress={onPressDetails}
+              onPress={() => onPressDetails?.(game)}
               accessibilityRole="button"
               accessibilityLabel="Ver detalhes"
               style={{
@@ -388,3 +411,9 @@ export function SwipeCard({
     </GestureDetector>
   );
 }
+
+/**
+ * memo: o deck re-renderiza a cada swipe. Sem isso os 3 cards remontam junto
+ * e o GestureDetector do topo é reanexado no meio do gesto seguinte.
+ */
+export const SwipeCard = memo(SwipeCardComponent);

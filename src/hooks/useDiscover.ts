@@ -10,6 +10,7 @@ import { getDiscoverBatch, dismissGame } from '@/src/services/discover.service';
 import { ensureGame } from '@/src/services/reviews.service';
 import { libraryKeys } from '@/src/hooks/useLibrary';
 import { track } from '@/src/lib/analytics';
+import { captureException } from '@/src/lib/sentry';
 import type { Game } from '@/src/types/models';
 
 export const discoverKeys = {
@@ -112,6 +113,12 @@ export function useDismissGame() {
         position_in_queue: vars.position ?? null,
       });
     },
+    // O card já saiu da tela quando isso roda (swipe otimista), então não há
+    // como avisar o usuário — mas engolir em silêncio esconderia dismissals
+    // perdidos. Reporta pro Sentry.
+    onError: (error, vars) => {
+      captureException(error, { scope: 'discover_dismiss', rawg_id: vars.rawgId });
+    },
   });
 }
 
@@ -143,6 +150,9 @@ export function useWishlistFromDiscover() {
         position_in_queue: vars.position ?? null,
       });
       queryClient.invalidateQueries({ queryKey: libraryKeys.all });
+    },
+    onError: (error, vars) => {
+      captureException(error, { scope: 'discover_wishlist', rawg_id: vars.rawgId });
     },
   });
 }
