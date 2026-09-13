@@ -9,6 +9,7 @@ import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
@@ -57,6 +58,7 @@ function SwipeCardComponent({
   onPressDetails,
 }: SwipeCardProps) {
   const { width, height } = useWindowDimensions();
+  const { t } = useTranslation();
 
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -259,7 +261,7 @@ function SwipeCardComponent({
               letterSpacing: 2,
             }}
           >
-            QUERO
+            {t('discover.stampWant')}
           </Text>
         </Animated.View>
         <Animated.View
@@ -287,7 +289,7 @@ function SwipeCardComponent({
               letterSpacing: 2,
             }}
           >
-            PULAR
+            {t('discover.stampSkip')}
           </Text>
         </Animated.View>
 
@@ -379,7 +381,7 @@ function SwipeCardComponent({
             <Pressable
               onPress={() => onPressDetails?.(game)}
               accessibilityRole="button"
-              accessibilityLabel="Ver detalhes"
+              accessibilityLabel={t('discover.viewDetails')}
               style={{
                 marginTop: 16,
                 flexDirection: 'row',
@@ -402,7 +404,7 @@ function SwipeCardComponent({
                   color: '#fff',
                 }}
               >
-                Ver detalhes
+                {t('discover.viewDetails')}
               </Text>
             </Pressable>
           )}

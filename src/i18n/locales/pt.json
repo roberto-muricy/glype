@@ -198,6 +198,8 @@
     "swipeRight": "Quero jogar",
     "swipeLeft": "Pular",
     "viewDetails": "Ver detalhes",
+    "stampWant": "QUERO",
+    "stampSkip": "PULAR",
     "emptyTitle": "Você viu todos os jogos disponíveis",
     "emptySubtitle": "Volte mais tarde ou explore manualmente pela busca.",
     "backToHome": "Voltar pra home",

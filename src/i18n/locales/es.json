@@ -198,6 +198,8 @@
     "swipeRight": "Quiero jugar",
     "swipeLeft": "Saltar",
     "viewDetails": "Ver detalles",
+    "stampWant": "QUIERO",
+    "stampSkip": "SALTAR",
     "emptyTitle": "Ya viste todos los juegos disponibles",
     "emptySubtitle": "Vuelve más tarde o explora manualmente desde la búsqueda.",
     "backToHome": "Volver al inicio",
