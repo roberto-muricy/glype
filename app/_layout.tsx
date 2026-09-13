@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
@@ -18,9 +19,24 @@ import { useAuthBootstrap } from '@/src/hooks/useAuth';
 import { useAuthStore } from '@/src/stores/auth';
 import { queryClient } from '@/src/lib/queryClient';
 import { tokens } from '@/src/theme/tokens';
+import { initI18n } from '@/src/i18n';
+import { initSentry } from '@/src/lib/sentry';
+import { initAnalytics } from '@/src/lib/analytics';
+import { ErrorBoundary } from '@/src/components/ui/ErrorBoundary';
 import '../global.css';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
+
+// Inicia i18n o quanto antes (top-level) — a Promise resolve antes do
+// primeiro render que precisa de traduções.
+const i18nReady = initI18n();
+
+// Sentry deve ser inicializado antes de qualquer código que possa falhar.
+// É síncrono — não precisa await.
+initSentry();
+
+// Analytics é assíncrono — inicia em background; eventos antes do init ficam buffered.
+initAnalytics();
 
 function AuthGate() {
   const router = useRouter();
@@ -34,8 +50,6 @@ function AuthGate() {
 
     const inAuthGroup = segments[0] === '(auth)';
     const inOnboarding = segments[0] === 'onboarding';
-    const inDev = segments[0] === 'dev';
-    if (inDev) return;
 
     if (!session && !inAuthGroup) {
       router.replace('/(auth)/login');
@@ -84,16 +98,24 @@ function AuthGate() {
       <Stack.Screen name="profile/followers" options={{ presentation: 'card' }} />
       <Stack.Screen name="profile/edit" options={{ presentation: 'modal' }} />
       <Stack.Screen name="profile/top-games" options={{ presentation: 'card' }} />
+      <Stack.Screen name="profile/language" options={{ presentation: 'card' }} />
+      <Stack.Screen name="profile/stats" options={{ presentation: 'card' }} />
+      <Stack.Screen name="profile/library" options={{ presentation: 'card' }} />
+      <Stack.Screen name="profile/blocked" options={{ presentation: 'card' }} />
       <Stack.Screen name="collection/[id]" options={{ presentation: 'card' }} />
+      <Stack.Screen name="discover" options={{ presentation: 'modal' }} />
       <Stack.Screen name="notifications" options={{ presentation: 'card' }} />
-      <Stack.Screen name="dev/components" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="dev/data" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }
 
 export default function RootLayout() {
   useAuthBootstrap();
+
+  const [i18nLoaded, setI18nLoaded] = useState(false);
+  useEffect(() => {
+    i18nReady.then(() => setI18nLoaded(true));
+  }, []);
 
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_500Medium,
@@ -103,19 +125,23 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded) {
+    if (fontsLoaded && i18nLoaded) {
       SplashScreen.hideAsync().catch(() => undefined);
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, i18nLoaded]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || !i18nLoaded) return null;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
-        <StatusBar style="light" />
-        <AuthGate />
-      </SafeAreaProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <QueryClientProvider client={queryClient}>
+          <SafeAreaProvider>
+            <StatusBar style="light" />
+            <AuthGate />
+          </SafeAreaProvider>
+        </QueryClientProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }

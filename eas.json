@@ -39,6 +39,7 @@
     },
     "production": {
       "autoIncrement": true,
+      "channel": "production",
       "ios": {
         "resourceClass": "m-medium"
       },
@@ -57,7 +58,14 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "robertomuricy@gmail.com"
+        "appleId": "robertomuricy@gmail.com",
+        "ascAppId": "6767755939"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./play-service-account.json",
+        "track": "internal",
+        "releaseStatus": "draft",
+        "changesNotSentForReview": false
       }
     }
   }

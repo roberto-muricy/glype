@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
-import { supabase } from '@/src/lib/supabase';
+import { getSessionUser, supabase } from '@/src/lib/supabase';
 import type { Review, ReviewDraft } from '@/src/types/models';
 
 const extra = Constants.expoConfig?.extra ?? {};
@@ -8,20 +8,37 @@ const SUPABASE_ANON_KEY = (extra['supabaseAnonKey'] as string | undefined) ?? ''
 
 // ─── ensure-game ─────────────────────────────────────────────────────────────
 
+// Teto no cliente: mesmo com timeouts no servidor, a tela nunca fica presa
+// esperando o gateway da Supabase (que só corta com 504 depois de muito tempo).
+const ENSURE_GAME_TIMEOUT_MS = 30_000;
+
 export async function ensureGame(rawgId: number): Promise<string> {
   const { data: { session } } = await supabase.auth.getSession();
 
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/ensure-game`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON_KEY,
-      ...(session?.access_token
-        ? { Authorization: `Bearer ${session.access_token}` }
-        : {}),
-    },
-    body: JSON.stringify({ rawg_id: rawgId }),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ENSURE_GAME_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(`${SUPABASE_URL}/functions/v1/ensure-game`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        ...(session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {}),
+      },
+      body: JSON.stringify({ rawg_id: rawgId }),
+      signal: controller.signal,
+    });
+  } catch (e) {
+    if (controller.signal.aborted) {
+      throw new Error(`[ensure-game] timeout após ${ENSURE_GAME_TIMEOUT_MS / 1000}s`);
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (!res.ok) {
     const text = await res.text();
@@ -35,23 +52,54 @@ export async function ensureGame(rawgId: number): Promise<string> {
 // ─── reviews CRUD ─────────────────────────────────────────────────────────────
 
 export async function createReview(gameId: string, draft: ReviewDraft): Promise<Review> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
+
+  // Normaliza body vazio/whitespace para NULL — review sem texto é válida (só nota).
+  const normalizedBody = draft.body?.trim() ? draft.body.trim() : null;
 
   const { data, error } = await supabase
     .from('reviews')
-    .insert({ ...draft, game_id: gameId, user_id: user.id })
+    .insert({ ...draft, body: normalizedBody, game_id: gameId, user_id: user.id })
     .select()
     .single();
 
   if (error) throw new Error(error.message);
+
+  // Adiciona o jogo automaticamente à biblioteca se ainda não estiver lá.
+  // Quem escreve uma review jogou (ou está jogando) o jogo.
+  // Não sobrescreve um status existente.
+  try {
+    const { data: existing } = await supabase
+      .from('user_games')
+      .select('status')
+      .eq('user_id', user.id)
+      .eq('game_id', gameId)
+      .maybeSingle();
+
+    if (!existing) {
+      const status = draft.completed ? 'played' : 'playing';
+      await supabase
+        .from('user_games')
+        .insert({ user_id: user.id, game_id: gameId, status });
+    }
+  } catch {
+    // Não falha a criação da review se a sincronização com a biblioteca der erro.
+  }
+
   return data as Review;
 }
 
 export async function updateReview(reviewId: string, draft: Partial<ReviewDraft>): Promise<Review> {
+  // Mesma normalização do create — body vazio vira NULL.
+  const normalized: Partial<ReviewDraft> = { ...draft };
+  if ('body' in draft) {
+    normalized.body = draft.body?.trim() ? draft.body.trim() : null;
+  }
+
   const { data, error } = await supabase
     .from('reviews')
-    .update(draft)
+    .update(normalized)
     .eq('id', reviewId)
     .select()
     .single();
@@ -70,7 +118,7 @@ export async function deleteReview(reviewId: string): Promise<void> {
 }
 
 export async function getMyReview(gameId: string): Promise<Review | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return null;
 
   const { data, error } = await supabase

@@ -12,18 +12,21 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Button, Toast } from '@/src/components/ui';
 import { ScoreSlider } from '@/src/components/domain';
-import { useCreateReview, useUpdateReview } from '@/src/hooks/useReviews';
-import { useGameDetail } from '@/src/hooks/useGames';
+import { useCreateReview, useUpdateReview, useMyReview } from '@/src/hooks/useReviews';
+import { useGameDetail, useGameByRawgId } from '@/src/hooks/useGames';
 import { tokens } from '@/src/theme/tokens';
 import { CloseIcon } from '@/src/components/ui/icons';
 import type { ReviewDraft } from '@/src/types/models';
 
-const BODY_MIN = 50;
+// Body é opcional desde a migration 0008; mantemos só um limite máximo defensivo no client.
+const BODY_MAX = 5000;
 
 export default function NewReviewScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const {
     rawgId: rawgIdParam,
     reviewId,      // se presente → modo edição
@@ -45,9 +48,15 @@ export default function NewReviewScreen() {
   }>();
 
   const rawgId = rawgIdParam ? parseInt(rawgIdParam, 10) : null;
-  const isEditing = !!reviewId;
 
   const { data: game } = useGameDetail(rawgId);
+  // Procura o jogo no cache local pra ter o UUID (se já existir) e descobrir
+  // se o usuário já tem uma review desse jogo.
+  const { data: localGame } = useGameByRawgId(rawgId);
+  const { data: existingReview } = useMyReview(localGame?.id ?? null);
+
+  const effectiveReviewId = reviewId ?? existingReview?.id;
+  const isEditing = !!effectiveReviewId;
 
   // ─── form state ──────────────────────────────────────────────────
   const [score, setScore] = useState(initialScore ? parseFloat(initialScore) : 8.0);
@@ -56,11 +65,32 @@ export default function NewReviewScreen() {
   const [completed, setCompleted] = useState(initialCompleted === 'true');
   const [hasSpoiler, setHasSpoiler] = useState(initialSpoiler === 'true');
   const [isPublic, setIsPublic] = useState(initialPublic !== 'false');
+  const [hydrated, setHydrated] = useState(false);
   const [toast, setToast] = useState<{ variant: 'success' | 'danger'; title: string } | null>(null);
+
+  // Se o usuário entrou em "Nova review" mas já existe uma review desse jogo,
+  // pré-preenche o formulário com os dados existentes (modo edição automático).
+  useEffect(() => {
+    if (hydrated) return;
+    if (reviewId) {
+      // Já veio em modo edição via URL — nada a fazer
+      return;
+    }
+    if (existingReview && !initialBody) {
+      setScore(existingReview.score);
+      setBody(existingReview.body ?? '');
+      setPlaytime(existingReview.playtime_hours?.toString() ?? '');
+      setCompleted(existingReview.completed);
+      setHasSpoiler(existingReview.has_spoiler);
+      setIsPublic(existingReview.is_public);
+      setHydrated(true);
+    }
+  }, [existingReview, reviewId, initialBody, hydrated]);
 
   const bodyRef = useRef<TextInput>(null);
   const bodyLen = body.trim().length;
-  const bodyValid = bodyLen >= BODY_MIN;
+  // Body é opcional agora. Sempre válido.
+  // Mantemos a variável só pra UI mostrar contagem de caracteres.
 
   const createReview = useCreateReview();
   const updateReview = useUpdateReview();
@@ -76,15 +106,11 @@ export default function NewReviewScreen() {
 
   const handleSubmit = async () => {
     if (!rawgId) return;
-    if (!bodyValid) {
-      setToast({ variant: 'danger', title: `Mínimo de ${BODY_MIN} caracteres no texto` });
-      bodyRef.current?.focus();
-      return;
-    }
 
     const draft: ReviewDraft = {
       score,
-      body: body.trim(),
+      // body opcional — vazio vira null (service também normaliza)
+      body: body.trim() || null,
       playtime_hours: playtime ? parseInt(playtime, 10) : null,
       completed,
       has_spoiler: hasSpoiler,
@@ -92,27 +118,31 @@ export default function NewReviewScreen() {
     };
 
     try {
-      if (isEditing && reviewId) {
-        await updateReview.mutateAsync({ reviewId, draft });
+      if (effectiveReviewId) {
+        await updateReview.mutateAsync({
+          reviewId: effectiveReviewId,
+          draft,
+          gameId: localGame?.id,
+        });
       } else {
         await createReview.mutateAsync({ rawgId, draft });
       }
-      setToast({ variant: 'success', title: isEditing ? 'Review atualizado!' : 'Review publicado!' });
+      setToast({ variant: 'success', title: isEditing ? t('review.reviewUpdated') : t('review.reviewPublished') });
       setTimeout(() => router.back(), 800);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+      const msg = err instanceof Error ? err.message : t('common.unknownError');
       setToast({ variant: 'danger', title: msg });
     }
   };
 
   const handleDelete = () => {
     Alert.alert(
-      'Excluir review',
-      'Tem certeza? Essa ação não pode ser desfeita.',
+      t('review.deleteConfirmTitle'),
+      t('review.deleteConfirmText'),
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Excluir',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () => router.back(),
         },
@@ -130,7 +160,7 @@ export default function NewReviewScreen() {
         <View className="flex-row items-center justify-between px-5 py-3 border-b border-border-subtle">
           <View className="flex-1 mr-3">
             <Text className="text-caption text-text-tertiary uppercase">
-              {isEditing ? 'Editar review' : 'Nova review'}
+              {isEditing ? t('review.editReview') : t('review.newReview')}
             </Text>
             {game && (
               <Text className="text-body-lg font-medium text-text-primary mt-0.5" numberOfLines={1}>
@@ -142,7 +172,7 @@ export default function NewReviewScreen() {
             onPress={() => router.back()}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Fechar"
+            accessibilityLabel={t('common.close')}
             className="rounded-full bg-bg-elevated p-2"
           >
             <CloseIcon size={18} color={tokens.color.text.primary} />
@@ -156,25 +186,27 @@ export default function NewReviewScreen() {
         >
           {/* ─── Score ─── */}
           <View className="px-5 pt-6">
-            <Text className="text-section uppercase text-brand-muted mb-3">Sua nota</Text>
+            <Text className="text-section uppercase text-brand-muted mb-3">{t('review.scoreLabel')}</Text>
             <ScoreSlider value={score} onValueChange={setScore} />
           </View>
 
           {/* ─── Texto ─── */}
           <View className="px-5 mt-6">
             <View className="flex-row items-baseline justify-between mb-2">
-              <Text className="text-section uppercase text-brand-muted">Texto</Text>
-              <Text
-                className={`text-caption ${bodyValid ? 'text-semantic-success' : 'text-text-tertiary'}`}
-              >
-                {bodyLen}/{BODY_MIN} mín.
+              <Text className="text-section uppercase text-brand-muted">
+                {t('review.textLabel')} <Text className="text-text-tertiary">· {t('common.optional')}</Text>
               </Text>
+              {bodyLen > 0 && (
+                <Text className="text-caption text-text-tertiary">
+                  {t('review.textCharCount', { count: bodyLen })}
+                </Text>
+              )}
             </View>
             <TextInput
               ref={bodyRef}
               value={body}
               onChangeText={setBody}
-              placeholder="Escreva sua opinião sobre o jogo…"
+              placeholder={t('review.textPlaceholderOptional')}
               placeholderTextColor={tokens.color.text.tertiary}
               multiline
               numberOfLines={6}
@@ -187,9 +219,7 @@ export default function NewReviewScreen() {
                 fontSize: tokens.fontSize['body-lg'],
                 minHeight: 140,
                 borderWidth: 1,
-                borderColor: bodyLen > 0 && !bodyValid
-                  ? tokens.color.semantic.danger
-                  : tokens.color.border.DEFAULT,
+                borderColor: tokens.color.border.DEFAULT,
               }}
             />
           </View>
@@ -197,12 +227,12 @@ export default function NewReviewScreen() {
           {/* ─── Tempo de jogo ─── */}
           <View className="px-5 mt-5">
             <Text className="text-section uppercase text-brand-muted mb-2">
-              Horas jogadas (opcional)
+              {t('review.playtimeOptional')}
             </Text>
             <TextInput
               value={playtime}
               onChangeText={(v) => setPlaytime(v.replace(/\D/g, ''))}
-              placeholder="ex: 60"
+              placeholder={t('review.playtimePlaceholder')}
               placeholderTextColor={tokens.color.text.tertiary}
               keyboardType="number-pad"
               style={{
@@ -222,17 +252,17 @@ export default function NewReviewScreen() {
           {/* ─── Toggles ─── */}
           <View className="px-5 mt-5 gap-0">
             <ToggleRow
-              label="Jogo completado"
+              label={t('review.completedToggle')}
               value={completed}
               onValueChange={setCompleted}
             />
             <ToggleRow
-              label="Contém spoilers"
+              label={t('review.spoilerToggle')}
               value={hasSpoiler}
               onValueChange={setHasSpoiler}
             />
             <ToggleRow
-              label="Review pública"
+              label={t('review.publicToggle')}
               value={isPublic}
               onValueChange={setIsPublic}
             />
@@ -248,15 +278,15 @@ export default function NewReviewScreen() {
           {/* ─── Ações ─── */}
           <View className="px-5 mt-6 gap-3">
             <Button
-              label={isSubmitting ? 'Salvando…' : isEditing ? 'Salvar alterações' : 'Publicar review'}
+              label={isSubmitting ? t('common.saving') : isEditing ? t('review.saveChanges') : t('review.publishReview')}
               size="lg"
-              disabled={isSubmitting || !bodyValid}
+              disabled={isSubmitting}
               loading={isSubmitting}
               onPress={handleSubmit}
             />
             {isEditing && (
               <Button
-                label="Excluir review"
+                label={t('review.deleteReview')}
                 size="lg"
                 variant="ghost"
                 onPress={handleDelete}

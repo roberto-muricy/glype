@@ -11,6 +11,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Input, SectionHeader, Skeleton, EmptyState, Avatar, Button } from '@/src/components/ui';
 import { GameCard, FilterTabs, SearchFilters } from '@/src/components/domain';
 import { useSearchGames, useRecommendations } from '@/src/hooks/useGames';
@@ -24,24 +25,28 @@ import { DEFAULT_FILTERS, hasActiveFilters } from '@/src/components/domain/Searc
 import type { Game } from '@/src/types/models';
 import type { SearchFiltersState } from '@/src/components/domain/SearchFilters';
 
-const GENRE_OPTIONS = [
-  { value: 'action', label: 'Ação' },
-  { value: 'role-playing-games-rpg', label: 'RPG' },
-  { value: 'adventure', label: 'Aventura' },
-  { value: 'shooter', label: 'Shooter' },
-  { value: 'sports', label: 'Esportes' },
-  { value: 'racing', label: 'Corrida' },
-  { value: 'indie', label: 'Indie' },
-  { value: 'strategy', label: 'Estratégia' },
-];
-
 export default function SearchScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [genre, setGenre] = useState('action');
   const [filters, setFilters] = useState<SearchFiltersState>(DEFAULT_FILTERS);
   const debouncedQuery = useDebounce(query, 400);
   const inputRef = useRef(null);
+
+  const GENRE_OPTIONS = useMemo(
+    () => [
+      { value: 'action', label: t('search.genres.action') },
+      { value: 'role-playing-games-rpg', label: t('search.genres.rpg') },
+      { value: 'adventure', label: t('search.genres.adventure') },
+      { value: 'shooter', label: t('search.genres.shooter') },
+      { value: 'sports', label: t('search.genres.sports') },
+      { value: 'racing', label: t('search.genres.racing') },
+      { value: 'indie', label: t('search.genres.indie') },
+      { value: 'strategy', label: t('search.genres.strategy') },
+    ],
+    [t],
+  );
 
   const isSearching = debouncedQuery.trim().length >= 2;
 
@@ -114,7 +119,7 @@ export default function SearchScreen() {
           <Input
             ref={inputRef}
             variant="search"
-            placeholder="Buscar jogos de PS4 / PS5…"
+            placeholder={t('search.placeholderPS')}
             value={query}
             onChangeText={setQuery}
             returnKeyType="search"
@@ -127,9 +132,9 @@ export default function SearchScreen() {
             onPress={handleClear}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Limpar busca"
+            accessibilityLabel={t('search.clearSearch')}
           >
-            <Text className="text-body text-brand-primary">Limpar</Text>
+            <Text className="text-body text-brand-primary">{t('common.clear')}</Text>
           </Pressable>
         )}
       </View>
@@ -149,7 +154,9 @@ export default function SearchScreen() {
             className="px-5 pb-1"
           >
             <Text className="text-caption text-brand-primary">
-              {activeFilterCount} filtro{activeFilterCount > 1 ? 's' : ''} ativo{activeFilterCount > 1 ? 's' : ''} · Limpar
+              {activeFilterCount > 1
+                ? t('search.filtersActivePlural', { count: activeFilterCount })
+                : t('search.filtersActive', { count: activeFilterCount })}
             </Text>
           </Pressable>
         )}
@@ -158,7 +165,7 @@ export default function SearchScreen() {
       {isSearching && (profileSearch.data?.length ?? 0) > 0 && (
         /* ─── Usuários encontrados ─── */
         <View>
-          <SectionHeader title="Usuários" />
+          <SectionHeader title={t('search.users')} />
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -190,12 +197,14 @@ export default function SearchScreen() {
             <View className="px-2 pb-2">
               <Text className="text-caption text-text-secondary">
                 {search.isLoading
-                  ? 'Buscando…'
+                  ? t('search.searching')
                   : search.isError
-                    ? 'Erro ao buscar'
+                    ? t('search.searchError')
                     : searchResults.length === 0 && hasActiveFilters(filters)
-                      ? `Nenhum resultado com os filtros ativos`
-                      : `${searchResults.length} resultado${searchResults.length !== 1 ? 's' : ''} para "${debouncedQuery}"`}
+                      ? t('search.noResultsWithFilters')
+                      : searchResults.length === 1
+                        ? t('search.resultCountSingular', { count: searchResults.length, query: debouncedQuery })
+                        : t('search.resultCountPlural', { count: searchResults.length, query: debouncedQuery })}
               </Text>
             </View>
           }
@@ -203,16 +212,16 @@ export default function SearchScreen() {
             !search.isLoading ? (
               <EmptyState
                 icon={<SearchIcon size={28} color={tokens.color.text.tertiary} />}
-                title={hasActiveFilters(filters) ? 'Sem resultados' : 'Nenhum resultado'}
+                title={hasActiveFilters(filters) ? t('library.noSearchResultsTitle') : t('search.noResults')}
                 subtitle={
                   hasActiveFilters(filters)
-                    ? 'Tente remover alguns filtros.'
-                    : `Não encontramos jogos para "${debouncedQuery}".`
+                    ? t('search.tryRemoveFilters')
+                    : t('search.noGamesFound', { query: debouncedQuery })
                 }
                 action={
                   hasActiveFilters(filters) ? (
                     <Button
-                      label="Limpar filtros"
+                      label={t('search.clearFilters')}
                       size="sm"
                       variant="secondary"
                       onPress={() => setFilters(DEFAULT_FILTERS)}
@@ -236,7 +245,7 @@ export default function SearchScreen() {
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={
             <>
-              <SectionHeader title="Descobrir" className="px-2" />
+              <SectionHeader title={t('search.discover')} className="px-2" />
               <FilterTabs
                 options={GENRE_OPTIONS}
                 selected={genre}
@@ -245,10 +254,10 @@ export default function SearchScreen() {
               {discoverResults.length === 0 && !discover.isLoading && hasActiveFilters(filters) && (
                 <View className="px-4 pt-3">
                   <Text className="text-caption text-text-tertiary">
-                    Sem jogos neste gênero com os filtros ativos.{' '}
+                    {t('search.noGamesGenreFilters')}
                   </Text>
                   <Pressable onPress={() => setFilters(DEFAULT_FILTERS)}>
-                    <Text className="text-caption text-brand-primary">Limpar filtros</Text>
+                    <Text className="text-caption text-brand-primary">{t('search.clearFilters')}</Text>
                   </Pressable>
                 </View>
               )}
@@ -271,6 +280,7 @@ function UserPill({
   currentUserId?: string;
 }) {
   const router = useRouter();
+  const { t } = useTranslation();
   const isMe = profile.id === currentUserId;
   const { data: following } = useIsFollowing(isMe ? null : profile.id);
   const follow = useFollowUser();
@@ -280,7 +290,7 @@ function UserPill({
     <Pressable
       onPress={() => router.push(`/profile/${profile.id}` as never)}
       accessibilityRole="button"
-      accessibilityLabel={`Ver perfil de ${profile.display_name ?? profile.username}`}
+      accessibilityLabel={t('profile.viewProfileOf', { name: profile.display_name ?? profile.username })}
       className="items-center gap-2"
       style={{ width: 80 }}
     >
@@ -294,7 +304,7 @@ function UserPill({
       </Text>
       {!isMe && (
         <Button
-          label={following ? 'Seguindo' : 'Seguir'}
+          label={following ? t('common.following') : t('common.follow')}
           size="sm"
           variant={following ? 'secondary' : 'primary'}
           onPress={(e) => {

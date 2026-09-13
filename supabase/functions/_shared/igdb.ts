@@ -6,6 +6,8 @@
 // Cacheamos o token em memória do isolate enquanto válido.
 
 const TOKEN_URL = 'https://id.twitch.tv/oauth2/token';
+/** Teto por chamada (token da Twitch e busca): a IGDB é enriquecimento opcional. */
+const IGDB_TIMEOUT_MS = 5_000;
 const IGDB_URL = 'https://api.igdb.com/v4';
 
 interface TokenCache {
@@ -55,6 +57,7 @@ async function getAccessToken(): Promise<string> {
   });
   const res = await fetch(`${TOKEN_URL}?${params.toString()}`, {
     method: 'POST',
+    signal: AbortSignal.timeout(IGDB_TIMEOUT_MS),
   });
   if (!res.ok) {
     const text = await res.text();
@@ -79,6 +82,7 @@ async function igdbFetch<T>(endpoint: string, body: string): Promise<T> {
       'Content-Type': 'text/plain',
     },
     body,
+    signal: AbortSignal.timeout(IGDB_TIMEOUT_MS),
   });
   if (!res.ok) {
     const text = await res.text();

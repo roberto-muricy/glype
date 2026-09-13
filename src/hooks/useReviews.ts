@@ -7,6 +7,7 @@ import {
   getGameReviews,
   ensureGame,
 } from '@/src/services/reviews.service';
+import { track } from '@/src/lib/analytics';
 import type { ReviewDraft } from '@/src/types/models';
 
 export const reviewKeys = {
@@ -44,8 +45,17 @@ export function useCreateReview() {
       return createReview(gameId, draft);
     },
     onSuccess: (review) => {
+      track('review_created', {
+        score: review.score,
+        has_spoiler: review.has_spoiler ?? false,
+        completed: review.completed ?? false,
+        has_playtime: review.playtime_hours != null,
+      });
       queryClient.invalidateQueries({ queryKey: reviewKeys.myReview(review.game_id) });
       queryClient.invalidateQueries({ queryKey: reviewKeys.gameReviews(review.game_id) });
+      // Criar review pode ter adicionado o jogo à biblioteca automaticamente.
+      queryClient.invalidateQueries({ queryKey: ['library'] });
+      queryClient.invalidateQueries({ queryKey: ['profile', 'stats'] });
     },
   });
 }
@@ -65,6 +75,7 @@ export function useUpdateReview() {
       gameId?: string; // usado apenas para invalidação
     }) => updateReview(reviewId, draft),
     onSuccess: (_, { gameId }) => {
+      track('review_updated');
       if (gameId) {
         queryClient.invalidateQueries({ queryKey: reviewKeys.myReview(gameId) });
         queryClient.invalidateQueries({ queryKey: reviewKeys.gameReviews(gameId) });
@@ -86,6 +97,7 @@ export function useDeleteReview() {
       gameId?: string;
     }) => deleteReview(reviewId),
     onSuccess: (_, { gameId }) => {
+      track('review_deleted');
       if (gameId) {
         queryClient.invalidateQueries({ queryKey: reviewKeys.myReview(gameId) });
         queryClient.invalidateQueries({ queryKey: reviewKeys.gameReviews(gameId) });

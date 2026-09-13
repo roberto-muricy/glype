@@ -54,3 +54,19 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: isWeb,
   },
 });
+
+/**
+ * Usuário da sessão local, sem ida ao servidor.
+ *
+ * `auth.getUser()` faz uma requisição ao Auth só pra dizer quem está logado, e
+ * os services chamavam isso antes de cada escrita (curtir, comentar, status…).
+ * Pra obter o `user.id`, a sessão persistida basta: o client renova o token
+ * sozinho (autoRefreshToken) e o banco valida o JWT via RLS em toda query —
+ * revalidar aqui não acrescenta segurança, só latência.
+ */
+export async function getSessionUser() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return session?.user ?? null;
+}

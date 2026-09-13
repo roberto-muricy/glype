@@ -1,10 +1,12 @@
 import { forwardRef, useState } from 'react';
-import { TextInput, View, type TextInputProps } from 'react-native';
+import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/src/utils/cn';
 import { tokens } from '@/src/theme/tokens';
 import { SearchIcon } from './icons';
 
+// Altura MÍNIMA, não fixa: com a fonte do sistema aumentada (comum em
+// aparelhos Samsung) o campo precisa crescer junto, senão o texto é cortado.
 const containerVariants = cva(
   'flex-row items-center rounded-xl border bg-bg-elevated px-4',
   {
@@ -14,8 +16,8 @@ const containerVariants = cva(
         false: 'border-border',
       },
       size: {
-        md: 'h-11',
-        lg: 'h-14',
+        md: 'min-h-11',
+        lg: 'min-h-14',
       },
     },
     defaultVariants: { focused: false, size: 'md' },
@@ -55,7 +57,8 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
       )}
       <TextInput
         ref={ref}
-        className={cn('flex-1 text-body-lg text-text-primary font-sans', className)}
+        className={cn('flex-1 text-text-primary font-sans', className)}
+        style={styles.input}
         placeholderTextColor={tokens.color.text.tertiary}
         selectionColor={tokens.color.brand.primary}
         onFocus={(e) => {
@@ -70,4 +73,16 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
       />
     </View>
   );
+});
+
+const styles = StyleSheet.create({
+  // Tipografia do `text-body-lg` sem o lineHeight: no Android, lineHeight fixo
+  // em TextInput corta o topo das letras quando a fonte do sistema aumenta.
+  // O padding vertical explícito iguala a altura no iOS e no Android e deixa o
+  // container crescer quando o texto cresce.
+  input: {
+    fontSize: 15,
+    letterSpacing: -0.08,
+    paddingVertical: 10,
+  },
 });

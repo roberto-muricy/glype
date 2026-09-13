@@ -1,31 +1,36 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  ActionSheetIOS,
   Alert,
-  Image,
-  Platform,
   Pressable,
   ScrollView,
   Text,
   View,
-  ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Badge, Button, Skeleton } from '@/src/components/ui';
+import { useTranslation } from 'react-i18next';
+import { Badge, Button, Skeleton, ActionSheet } from '@/src/components/ui';
+import type { ActionSheetItem } from '@/src/components/ui';
 import { ScoresAggregateBlock } from '@/src/components/domain';
 import { useGameDetail } from '@/src/hooks/useGames';
 import { useMyGameStatus, useSetGameStatus, useRemoveFromLibrary } from '@/src/hooks/useLibrary';
 import { ensureGame } from '@/src/services/reviews.service';
-import { GAME_STATUS_LABEL, type GameStatus } from '@/src/types/models';
+import { getGameByRawgId } from '@/src/services/games.service';
+import { captureException } from '@/src/lib/sentry';
+import { hapticError } from '@/src/utils/haptics';
+import { useGameStatusLabel } from '@/src/i18n/useGameStatusLabel';
+import { type GameStatus } from '@/src/types/models';
 import { tokens } from '@/src/theme/tokens';
-import { CloseIcon } from '@/src/components/ui/icons';
+import { CloseIcon, TrashIcon, CheckIcon } from '@/src/components/ui/icons';
 import type { Game } from '@/src/types/models';
 
 export default function GameDetailScreen() {
   const { rawgId } = useLocalSearchParams<{ rawgId: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const id = rawgId ? parseInt(rawgId, 10) : null;
   const { data: game, isLoading, isError, error } = useGameDetail(id);
@@ -45,6 +50,9 @@ export default function GameDetailScreen() {
             <Image
               source={{ uri: (game.background_url ?? game.cover_url)! }}
               style={{ width: '100%', height: 320 }}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={200}
               accessibilityIgnoresInvertColors
             />
           ) : (
@@ -59,24 +67,6 @@ export default function GameDetailScreen() {
             colors={['transparent', tokens.color.bg.primary]}
             style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 160 }}
           />
-
-          {/* Close button */}
-          <SafeAreaView
-            edges={['top']}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0 }}
-          >
-            <View className="flex-row justify-end px-4 pt-2">
-              <Pressable
-                onPress={() => router.back()}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel="Fechar"
-                className="rounded-full bg-bg-primary/70 p-2"
-              >
-                <CloseIcon size={20} color={tokens.color.text.primary} />
-              </Pressable>
-            </View>
-          </SafeAreaView>
 
           {/* Title over hero */}
           {!isLoading && game && (
@@ -99,9 +89,38 @@ export default function GameDetailScreen() {
 
         {/* ─── Body ─── */}
         {isLoading && <LoadingSkeleton />}
-        {isError && <ErrorBlock message={error instanceof Error ? error.message : 'Erro ao carregar jogo'} onRetry={() => {}} />}
+        {isError && <ErrorBlock message={error instanceof Error ? error.message : t('gameDetail.errorLoading')} onRetry={() => {}} />}
         {!isLoading && !isError && game && <GameBody game={game} />}
       </ScrollView>
+
+      {/* Close button — overlay fixo, sempre visível independente do scroll */}
+      <SafeAreaView
+        edges={['top']}
+        pointerEvents="box-none"
+        style={{ position: 'absolute', top: 0, left: 0, right: 0 }}
+      >
+        <View
+          pointerEvents="box-none"
+          className="flex-row justify-end px-4 pt-2"
+        >
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: 'rgba(0,0,0,0.55)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <CloseIcon size={20} color={tokens.color.text.primary} />
+          </Pressable>
+        </View>
+      </SafeAreaView>
     </View>
   );
 }
@@ -110,6 +129,7 @@ export default function GameDetailScreen() {
 
 function GameBody({ game }: { game: Game }) {
   const router = useRouter();
+  const { t } = useTranslation();
   const scoreSources = buildScoreSources(game);
   const [gameId, setGameId] = useState<string | null>(null);
 
@@ -151,9 +171,9 @@ function GameBody({ game }: { game: Game }) {
       {game.publisher && (
         <View className="flex-row gap-4">
           {game.developer && game.developer !== game.publisher && (
-            <InfoPair label="Desenvolvedora" value={game.developer} />
+            <InfoPair label={t('gameDetail.developer')} value={game.developer} />
           )}
-          <InfoPair label="Publicadora" value={game.publisher} />
+          <InfoPair label={t('gameDetail.publisher')} value={game.publisher} />
         </View>
       )}
 
@@ -163,7 +183,7 @@ function GameBody({ game }: { game: Game }) {
       {/* Biblioteca + Review */}
       <LibraryButton rawgId={game.rawg_id} resolveGameId={resolveGameId} />
       <Button
-        label="Escrever review"
+        label={t('gameDetail.writeReview')}
         size="lg"
         variant="secondary"
         onPress={() =>
@@ -177,6 +197,7 @@ function GameBody({ game }: { game: Game }) {
 // ─── sub-components ──────────────────────────────────────────────────────────
 
 function DescriptionBlock({ text }: { text: string }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const isLong = text.length > 280;
   const displayed = isLong && !expanded ? text.slice(0, 280).trimEnd() + '…' : text;
@@ -189,10 +210,10 @@ function DescriptionBlock({ text }: { text: string }) {
           onPress={() => setExpanded((v) => !v)}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={expanded ? 'Mostrar menos' : 'Mostrar mais'}
+          accessibilityLabel={expanded ? t('gameDetail.showLess') : t('gameDetail.showMore')}
         >
           <Text className="text-body text-brand-primary mt-1">
-            {expanded ? 'Mostrar menos' : 'Mostrar mais'}
+            {expanded ? t('gameDetail.showLess') : t('gameDetail.showMore')}
           </Text>
         </Pressable>
       )}
@@ -228,10 +249,11 @@ function LoadingSkeleton() {
 }
 
 function ErrorBlock({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { t } = useTranslation();
   return (
     <View className="px-5 mt-6 items-center gap-3">
       <Text className="text-body text-text-secondary text-center">{message}</Text>
-      <Button label="Tentar novamente" size="sm" variant="secondary" onPress={onRetry} />
+      <Button label={t('common.retry')} size="sm" variant="secondary" onPress={onRetry} />
     </View>
   );
 }
@@ -240,6 +262,13 @@ function ErrorBlock({ message, onRetry }: { message: string; onRetry: () => void
 
 const STATUS_OPTIONS: GameStatus[] = ['playing', 'played', 'wishlist', 'dropped'];
 
+const STATUS_ICON: Record<GameStatus, keyof typeof Ionicons.glyphMap> = {
+  playing: 'game-controller-outline',
+  played: 'trophy-outline',
+  wishlist: 'bookmark-outline',
+  dropped: 'pause-circle-outline',
+};
+
 function LibraryButton({
   rawgId,
   resolveGameId,
@@ -247,57 +276,49 @@ function LibraryButton({
   rawgId: number | null;
   resolveGameId: () => Promise<string | null>;
 }) {
+  const { t } = useTranslation();
+  const GAME_STATUS_LABEL = useGameStatusLabel();
+  const STATUS_HINT: Record<GameStatus, string> = {
+    playing: t('gameStatus.hintPlaying'),
+    played: t('gameStatus.hintPlayedShort'),
+    wishlist: t('gameStatus.hintWishlistShort'),
+    dropped: t('gameStatus.hintDroppedShort'),
+  };
   const [resolvedId, setResolvedId] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const { data: currentStatus, isLoading } = useMyGameStatus(resolvedId);
   const setStatus = useSetGameStatus();
   const remove = useRemoveFromLibrary();
 
-  // Resolve o ID na primeira vez que o botão é renderizado
-  useState(() => {
-    if (rawgId) {
-      resolveGameId().then((id) => setResolvedId(id));
-    }
-  });
-
-  const handlePress = () => {
-    const actions = STATUS_OPTIONS.map((s) => GAME_STATUS_LABEL[s]);
-    const hasStatus = !!currentStatus;
-
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: [...actions, hasStatus ? 'Remover da biblioteca' : 'Cancelar', 'Cancelar'],
-          destructiveButtonIndex: hasStatus ? actions.length : undefined,
-          cancelButtonIndex: actions.length + (hasStatus ? 1 : 0),
-          title: 'Adicionar à biblioteca',
-        },
-        (idx) => {
-          if (idx < STATUS_OPTIONS.length) {
-            handleSetStatus(STATUS_OPTIONS[idx]);
-          } else if (hasStatus && idx === STATUS_OPTIONS.length) {
-            handleRemove();
-          }
-        },
-      );
-    } else {
-      // Android: Alert com opções
-      const buttons = STATUS_OPTIONS.map((s) => ({
-        text: GAME_STATUS_LABEL[s],
-        onPress: () => handleSetStatus(s),
-      }));
-      if (hasStatus) {
-        buttons.push({ text: 'Remover', onPress: handleRemove } as typeof buttons[0]);
-      }
-      buttons.push({ text: 'Cancelar', onPress: () => {} } as typeof buttons[0]);
-      Alert.alert('Adicionar à biblioteca', undefined, buttons);
-    }
-  };
+  // Na abertura só LÊ o cadastro do jogo. Antes chamava o ensure-game aqui: ver
+  // um jogo sem cadastro gravava na tabela `games` e esperava RAWG + IGDB, e a
+  // promise sem .catch virava rejeição não tratada (GLYPE-2 no Sentry). Jogo sem
+  // cadastro não pode estar na biblioteca, então não há status a buscar.
+  useEffect(() => {
+    if (!rawgId) return;
+    let cancelled = false;
+    getGameByRawgId(rawgId)
+      .then((existing) => {
+        if (!cancelled && existing?.id) setResolvedId(existing.id);
+      })
+      .catch((e) => captureException(e, { scope: 'game_status_lookup', rawg_id: rawgId }));
+    return () => {
+      cancelled = true;
+    };
+  }, [rawgId]);
 
   const handleSetStatus = async (status: GameStatus) => {
-    const id = resolvedId ?? await resolveGameId();
-    if (!id) return;
-    setResolvedId(id);
-    setStatus.mutate({ gameId: id, status });
+    try {
+      // Só aqui garantimos o cadastro: é a única ação que precisa dele.
+      const id = resolvedId ?? (await resolveGameId());
+      if (!id) return;
+      setResolvedId(id);
+      setStatus.mutate({ gameId: id, status });
+    } catch (e) {
+      hapticError();
+      captureException(e, { scope: 'game_set_status', rawg_id: rawgId });
+      Alert.alert(t('common.error'), t('gameStatus.errorSaving'));
+    }
   };
 
   const handleRemove = () => {
@@ -305,19 +326,65 @@ function LibraryButton({
     remove.mutate(resolvedId);
   };
 
+  const hasStatus = !!currentStatus;
+
   const label = isLoading
     ? '…'
     : currentStatus
       ? GAME_STATUS_LABEL[currentStatus]
-      : 'Adicionar à biblioteca';
+      : t('gameStatus.addToLibrary');
+
+  const actions: ActionSheetItem[] = STATUS_OPTIONS.map((s) => {
+    const selected = currentStatus === s;
+    return {
+      label: GAME_STATUS_LABEL[s],
+      sublabel: STATUS_HINT[s],
+      selected,
+      icon: (
+        <Ionicons
+          name={STATUS_ICON[s]}
+          size={22}
+          color={selected ? tokens.color.brand.primary : tokens.color.text.secondary}
+        />
+      ),
+      onPress: () => handleSetStatus(s),
+    };
+  });
+
+  if (hasStatus) {
+    actions.push({
+      label: t('gameStatus.removeFromLibrary'),
+      icon: <TrashIcon size={20} color={tokens.color.semantic.danger} />,
+      destructive: true,
+      onPress: handleRemove,
+    });
+  }
 
   return (
-    <Button
-      label={label}
-      size="lg"
-      onPress={handlePress}
-      loading={setStatus.isPending || remove.isPending}
-    />
+    <>
+      <Button
+        label={label}
+        size="lg"
+        onPress={() => setSheetOpen(true)}
+        loading={setStatus.isPending || remove.isPending}
+        icon={
+          hasStatus ? (
+            <CheckIcon size={18} color={tokens.color.text.primary} />
+          ) : undefined
+        }
+      />
+      <ActionSheet
+        visible={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        title={hasStatus ? t('gameStatus.statusInLibrary') : t('gameStatus.addToLibrary')}
+        subtitle={
+          hasStatus
+            ? t('gameStatus.currently', { status: GAME_STATUS_LABEL[currentStatus] })
+            : t('gameStatus.howToMark')
+        }
+        actions={actions}
+      />
+    </>
   );
 }
 

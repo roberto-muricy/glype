@@ -1,7 +1,7 @@
-import { supabase } from '@/src/lib/supabase';
+import { getSessionUser, supabase } from '@/src/lib/supabase';
 
 export async function likeReview(reviewId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
   const { error } = await supabase
     .from('review_likes')
@@ -10,7 +10,7 @@ export async function likeReview(reviewId: string): Promise<void> {
 }
 
 export async function unlikeReview(reviewId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
   const { error } = await supabase
     .from('review_likes')
@@ -23,7 +23,7 @@ export async function unlikeReview(reviewId: string): Promise<void> {
 export async function getReviewLikes(
   reviewId: string,
 ): Promise<{ count: number; liked: boolean }> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   const [countRes, likedRes] = await Promise.all([
     supabase
@@ -51,7 +51,7 @@ export async function getBatchReviewLikes(reviewIds: string[]): Promise<
   Record<string, { count: number; liked: boolean }>
 > {
   if (reviewIds.length === 0) return {};
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   const [allLikes, myLikes] = await Promise.all([
     supabase

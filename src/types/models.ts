@@ -1,3 +1,4 @@
+import type { ReportReason, ReportTargetType } from '@/src/services/moderation.service';
 // Interfaces de domínio (modelo lido pela aplicação).
 // Espelha as colunas que o app realmente lê em cada tabela.
 
@@ -16,6 +17,8 @@ export interface Profile {
 // Tipo canônico de jogo — produzido pelas Edge Functions (normalizeRawg/mergeRawgIgdb)
 // e armazenado na tabela `games`. O app só lê este formato.
 export interface Game {
+  /** UUID local (presente quando o jogo já está no cache da tabela `games`). */
+  id?: string;
   rawg_id: number | null;
   igdb_id: number | null;
   title: string;
@@ -56,7 +59,7 @@ export interface Review {
   user_id: string;
   game_id: string;
   score: number;          // 0–10, step 0.5
-  body: string;           // mínimo 50 chars
+  body: string | null;    // opcional — usuário pode só dar nota
   playtime_hours: number | null;
   completed: boolean;
   has_spoiler: boolean;
@@ -67,7 +70,7 @@ export interface Review {
 
 export interface ReviewDraft {
   score: number;
-  body: string;
+  body: string | null;
   playtime_hours: number | null;
   completed: boolean;
   has_spoiler: boolean;
@@ -89,7 +92,7 @@ export interface UserGame {
 export interface FeedItem {
   id: string;
   score: number;
-  body: string;
+  body: string | null;
   has_spoiler: boolean;
   completed: boolean;
   playtime_hours: number | null;
@@ -123,7 +126,7 @@ export interface FavoriteGame {
   };
 }
 
-export type NotificationType = 'like' | 'follow' | 'comment';
+export type NotificationType = 'like' | 'follow' | 'comment' | 'report';
 
 export interface ReviewComment {
   id: string;
@@ -149,11 +152,16 @@ export interface NotificationItem {
     display_name: string | null;
     avatar_url: string | null;
   };
-  /** Presente apenas em notificações do tipo 'like' */
+  /** Presente em 'like', 'comment' e em 'report' quando o alvo é review ou comentário. */
   review: {
     id: string;
     game_title: string;
     game_rawg_id: number | null;
+  } | null;
+  /** Presente apenas em 'report' (só admins recebem esse tipo). */
+  report: {
+    reason: ReportReason;
+    target_type: ReportTargetType;
   } | null;
 }
 
