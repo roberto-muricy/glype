@@ -52,9 +52,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         },
       },
     ],
-    // '@sentry/react-native/expo' removido até configurar SENTRY_AUTH_TOKEN no EAS.
-    // Sentry runtime continua funcionando via Sentry.init() em src/lib/sentry.ts.
-    // O plugin é só pra upload de source maps no build — sem auth token, ele trava o build Android.
+    [
+      // Upload de source maps no build nativo. Antes estava removido porque, sem
+      // organização configurada, o sentry-cli derrubava o build Android. Org e
+      // projeto não são segredo; o SENTRY_AUTH_TOKEN fica só no EAS (sensitive).
+      '@sentry/react-native/expo',
+      {
+        organization: 'loopwise',
+        project: 'glype',
+        url: 'https://sentry.io/',
+      },
+    ],
     [
       '@react-native-google-signin/google-signin',
       {
