@@ -40,6 +40,12 @@ function getApiKey(): string {
   return key;
 }
 
+/**
+ * Teto por chamada à RAWG. Sem ele, uma RAWG lenta segura a Edge Function até o
+ * gateway da Supabase cortar com 504 (foi o GLYPE-2 no Sentry).
+ */
+const RAWG_TIMEOUT_MS = 10_000;
+
 async function rawgFetch<T>(
   path: string,
   params: Record<string, string> = {},
@@ -49,7 +55,16 @@ async function rawgFetch<T>(
   for (const [k, v] of Object.entries(params)) {
     url.searchParams.set(k, v);
   }
-  const res = await fetch(url.toString());
+  let res: Response;
+  try {
+    // O signal também cobre a leitura do corpo (res.json()) mais abaixo.
+    res = await fetch(url.toString(), { signal: AbortSignal.timeout(RAWG_TIMEOUT_MS) });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'TimeoutError') {
+      throw new Error(`RAWG não respondeu em ${RAWG_TIMEOUT_MS / 1000}s`);
+    }
+    throw err;
+  }
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`RAWG ${res.status}: ${text.slice(0, 200)}`);

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   Text,
@@ -17,6 +18,9 @@ import { ScoresAggregateBlock } from '@/src/components/domain';
 import { useGameDetail } from '@/src/hooks/useGames';
 import { useMyGameStatus, useSetGameStatus, useRemoveFromLibrary } from '@/src/hooks/useLibrary';
 import { ensureGame } from '@/src/services/reviews.service';
+import { getGameByRawgId } from '@/src/services/games.service';
+import { captureException } from '@/src/lib/sentry';
+import { hapticError } from '@/src/utils/haptics';
 import { useGameStatusLabel } from '@/src/i18n/useGameStatusLabel';
 import { type GameStatus } from '@/src/types/models';
 import { tokens } from '@/src/theme/tokens';
@@ -286,18 +290,35 @@ function LibraryButton({
   const setStatus = useSetGameStatus();
   const remove = useRemoveFromLibrary();
 
-  // Resolve o ID na primeira vez que o botão é renderizado
-  useState(() => {
-    if (rawgId) {
-      resolveGameId().then((id) => setResolvedId(id));
-    }
-  });
+  // Na abertura só LÊ o cadastro do jogo. Antes chamava o ensure-game aqui: ver
+  // um jogo sem cadastro gravava na tabela `games` e esperava RAWG + IGDB, e a
+  // promise sem .catch virava rejeição não tratada (GLYPE-2 no Sentry). Jogo sem
+  // cadastro não pode estar na biblioteca, então não há status a buscar.
+  useEffect(() => {
+    if (!rawgId) return;
+    let cancelled = false;
+    getGameByRawgId(rawgId)
+      .then((existing) => {
+        if (!cancelled && existing?.id) setResolvedId(existing.id);
+      })
+      .catch((e) => captureException(e, { scope: 'game_status_lookup', rawg_id: rawgId }));
+    return () => {
+      cancelled = true;
+    };
+  }, [rawgId]);
 
   const handleSetStatus = async (status: GameStatus) => {
-    const id = resolvedId ?? (await resolveGameId());
-    if (!id) return;
-    setResolvedId(id);
-    setStatus.mutate({ gameId: id, status });
+    try {
+      // Só aqui garantimos o cadastro: é a única ação que precisa dele.
+      const id = resolvedId ?? (await resolveGameId());
+      if (!id) return;
+      setResolvedId(id);
+      setStatus.mutate({ gameId: id, status });
+    } catch (e) {
+      hapticError();
+      captureException(e, { scope: 'game_set_status', rawg_id: rawgId });
+      Alert.alert(t('common.error'), t('gameStatus.errorSaving'));
+    }
   };
 
   const handleRemove = () => {

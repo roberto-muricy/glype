@@ -326,7 +326,8 @@
     "hintDroppedShort": "Largou no meio",
     "statusInLibrary": "Status na biblioteca",
     "howToMark": "Como você quer marcar esse jogo?",
-    "currently": "Atualmente: {{status}}"
+    "currently": "Atualmente: {{status}}",
+    "errorSaving": "Não foi possível salvar o status. Tente novamente."
   },
   "search": {
     "placeholder": "Buscar jogos, jogadores…",

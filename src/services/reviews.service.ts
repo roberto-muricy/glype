@@ -8,20 +8,37 @@ const SUPABASE_ANON_KEY = (extra['supabaseAnonKey'] as string | undefined) ?? ''
 
 // ─── ensure-game ─────────────────────────────────────────────────────────────
 
+// Teto no cliente: mesmo com timeouts no servidor, a tela nunca fica presa
+// esperando o gateway da Supabase (que só corta com 504 depois de muito tempo).
+const ENSURE_GAME_TIMEOUT_MS = 30_000;
+
 export async function ensureGame(rawgId: number): Promise<string> {
   const { data: { session } } = await supabase.auth.getSession();
 
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/ensure-game`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON_KEY,
-      ...(session?.access_token
-        ? { Authorization: `Bearer ${session.access_token}` }
-        : {}),
-    },
-    body: JSON.stringify({ rawg_id: rawgId }),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ENSURE_GAME_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(`${SUPABASE_URL}/functions/v1/ensure-game`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        ...(session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {}),
+      },
+      body: JSON.stringify({ rawg_id: rawgId }),
+      signal: controller.signal,
+    });
+  } catch (e) {
+    if (controller.signal.aborted) {
+      throw new Error(`[ensure-game] timeout após ${ENSURE_GAME_TIMEOUT_MS / 1000}s`);
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (!res.ok) {
     const text = await res.text();

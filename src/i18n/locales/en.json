@@ -326,7 +326,8 @@
     "hintDroppedShort": "Dropped halfway through",
     "statusInLibrary": "Library status",
     "howToMark": "How do you want to mark this game?",
-    "currently": "Currently: {{status}}"
+    "currently": "Currently: {{status}}",
+    "errorSaving": "Couldn't save the status. Please try again."
   },
   "search": {
     "placeholder": "Search games, players…",

@@ -11,6 +11,17 @@ import { searchGameByName } from '../_shared/igdb.ts';
 import { normalizeRawg, normalizeIgdb, mergeRawgIgdb } from '../_shared/normalize.ts';
 import { getServiceClient } from '../_shared/cache.ts';
 
+/** A IGDB é opcional aqui: não pode segurar o cadastro do jogo. */
+const IGDB_BUDGET_MS = 4_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`timeout após ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 Deno.serve(async (req: Request) => {
   const preflight = handlePreflight(req);
   if (preflight) return preflight;
@@ -49,7 +60,9 @@ Deno.serve(async (req: Request) => {
 
     let igdbMatch = null;
     try {
-      const igdbResults = await searchGameByName(rawgGame.name);
+      // Orçamento próprio: se a IGDB (ou o token da Twitch) demorar, o jogo é
+      // salvo só com os dados da RAWG em vez de travar a resposta.
+      const igdbResults = await withTimeout(searchGameByName(rawgGame.name), IGDB_BUDGET_MS);
       if (igdbResults.length > 0) igdbMatch = normalizeIgdb(igdbResults[0]);
     } catch { /* best-effort */ }
 
