@@ -1,7 +1,7 @@
 // Moderação: denúncias e bloqueios entre usuários.
 // Requisito de Apple App Store guideline 1.2 + Google Play UGC policy.
 
-import { supabase } from '@/src/lib/supabase';
+import { getSessionUser, supabase } from '@/src/lib/supabase';
 
 export type ReportTargetType = 'review' | 'comment' | 'user';
 
@@ -30,7 +30,7 @@ export interface CreateReportInput {
  * Falha se já houver denúncia do mesmo reporter no mesmo target (unique constraint).
  */
 export async function createReport(input: CreateReportInput): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
 
   if (input.reportedUserId === user.id) {
@@ -59,7 +59,7 @@ export async function createReport(input: CreateReportInput): Promise<void> {
 
 /** Bloqueia um usuário. Idempotente — se já bloqueado, no-op. */
 export async function blockUser(targetUserId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
   if (targetUserId === user.id) throw new Error('Você não pode bloquear a si mesmo');
 
@@ -75,7 +75,7 @@ export async function blockUser(targetUserId: string): Promise<void> {
 
 /** Desbloqueia um usuário. */
 export async function unblockUser(targetUserId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
 
   const { error } = await supabase
@@ -89,7 +89,7 @@ export async function unblockUser(targetUserId: string): Promise<void> {
 
 /** Retorna lista de IDs que o usuário atual bloqueou. */
 export async function getBlockedUserIds(): Promise<string[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return [];
 
   const { data, error } = await supabase
@@ -109,7 +109,7 @@ export async function getBlockedUsers(): Promise<Array<{
   avatar_url: string | null;
   blocked_at: string;
 }>> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return [];
 
   const { data, error } = await supabase
@@ -140,7 +140,7 @@ export async function getBlockedUsers(): Promise<Array<{
 
 /** Verifica se o usuário atual bloqueou um usuário específico. */
 export async function isBlocked(targetUserId: string): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return false;
 
   const { data } = await supabase

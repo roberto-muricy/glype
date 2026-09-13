@@ -132,8 +132,8 @@ export function useWishlistFromDiscover() {
     mutationFn: async ({ rawgId }: { rawgId: number; position?: number }) => {
       const gameId = await ensureGame(rawgId);
       // Insere/atualiza user_games com status='wishlist' usando upsert.
-      const { supabase } = await import('@/src/lib/supabase');
-      const { data: { user } } = await supabase.auth.getUser();
+      const { supabase, getSessionUser } = await import('@/src/lib/supabase');
+      const user = await getSessionUser();
       if (!user) throw new Error('Não autenticado');
       const { error } = await supabase
         .from('user_games')

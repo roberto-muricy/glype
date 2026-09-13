@@ -1,6 +1,6 @@
 import type { Session, User } from '@supabase/supabase-js';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { supabase } from '@/src/lib/supabase';
+import { getSessionUser, supabase } from '@/src/lib/supabase';
 import { googleSignInCanceledError } from '@/src/utils/authErrors';
 
 // Google Sign-In requer um dev build com módulo nativo (não funciona em Expo Go).
@@ -143,7 +143,7 @@ export async function signInWithApple(): Promise<void> {
 
   if (fullName) {
     // Best-effort: update display_name if still blank
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getSessionUser();
     if (user) {
       await supabase
         .from('profiles')

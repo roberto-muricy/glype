@@ -1,7 +1,7 @@
 // Serviço pro swipe deck — busca a queue paginada e marca dismissals.
 
 import Constants from 'expo-constants';
-import { supabase } from '@/src/lib/supabase';
+import { getSessionUser, supabase } from '@/src/lib/supabase';
 import type { Game } from '@/src/types/models';
 
 const extra = Constants.expoConfig?.extra ?? {};
@@ -51,7 +51,7 @@ export async function getDiscoverBatch(
  * Requer o game_id interno (UUID), não o rawg_id. Use ensureGame() antes.
  */
 export async function dismissGame(gameId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
 
   const { error } = await supabase

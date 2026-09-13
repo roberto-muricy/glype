@@ -1,4 +1,4 @@
-import { supabase } from '@/src/lib/supabase';
+import { getSessionUser, supabase } from '@/src/lib/supabase';
 import type { NotificationItem, NotificationType } from '@/src/types/models';
 
 // Shape cru retornado pelo Supabase (joins aninhados).
@@ -21,7 +21,7 @@ interface RawNotification {
 
 /** Lista as notificações do usuário logado, mais recentes primeiro. */
 export async function getNotifications(limit = 50): Promise<NotificationItem[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return [];
 
   const { data, error } = await supabase
@@ -62,7 +62,7 @@ export async function getNotifications(limit = 50): Promise<NotificationItem[]> 
 
 /** Conta as notificações não lidas do usuário logado. */
 export async function getUnreadCount(): Promise<number> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return 0;
 
   const { count, error } = await supabase
@@ -77,7 +77,7 @@ export async function getUnreadCount(): Promise<number> {
 
 /** Marca todas as notificações do usuário como lidas. */
 export async function markAllAsRead(): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return;
 
   const { error } = await supabase

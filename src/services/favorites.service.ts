@@ -1,4 +1,4 @@
-import { supabase } from '@/src/lib/supabase';
+import { getSessionUser, supabase } from '@/src/lib/supabase';
 import type { FavoriteGame } from '@/src/types/models';
 
 // Shape cru retornado pelo Supabase com join.
@@ -37,7 +37,7 @@ export async function getFavoriteGames(userId: string): Promise<FavoriteGame[]> 
  * Estratégia: apaga tudo e reinsere — simples e evita conflitos de PK no reorder.
  */
 export async function setFavoriteGames(gameIds: string[]): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
 
   // Apaga o top atual

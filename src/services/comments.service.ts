@@ -1,4 +1,4 @@
-import { supabase } from '@/src/lib/supabase';
+import { getSessionUser, supabase } from '@/src/lib/supabase';
 import type { ReviewComment } from '@/src/types/models';
 
 // Shape cru retornado pelo Supabase (join aninhado).
@@ -19,7 +19,7 @@ interface RawComment {
  *  Filtra comentários de usuários bloqueados pelo viewer. */
 export async function getReviewComments(reviewId: string): Promise<ReviewComment[]> {
   // 1. Buscar lista de bloqueados (única query extra — RLS impede ver os outros)
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   let blockedIds: string[] = [];
   if (user) {
     const { data: blocks } = await supabase
@@ -66,7 +66,7 @@ export async function createComment(
   reviewId: string,
   body: string,
 ): Promise<ReviewComment> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
 
   const trimmed = body.trim();

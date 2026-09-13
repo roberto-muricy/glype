@@ -1,8 +1,8 @@
-import { supabase } from '@/src/lib/supabase';
+import { getSessionUser, supabase } from '@/src/lib/supabase';
 import type { GameStatus, UserGame } from '@/src/types/models';
 
 export async function getMyLibrary(status?: GameStatus): Promise<UserGame[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return [];
 
   let query = supabase
@@ -21,7 +21,7 @@ export async function getMyLibrary(status?: GameStatus): Promise<UserGame[]> {
 }
 
 export async function getMyGameStatus(gameId: string): Promise<GameStatus | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return null;
 
   const { data } = await supabase
@@ -35,7 +35,7 @@ export async function getMyGameStatus(gameId: string): Promise<GameStatus | null
 }
 
 export async function setGameStatus(gameId: string, status: GameStatus): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
 
   const { error } = await supabase
@@ -49,7 +49,7 @@ export async function setGameStatus(gameId: string, status: GameStatus): Promise
 }
 
 export async function removeFromLibrary(gameId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
 
   const { error } = await supabase

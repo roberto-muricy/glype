@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
-import { supabase } from '@/src/lib/supabase';
+import { getSessionUser, supabase } from '@/src/lib/supabase';
 import type { Review, ReviewDraft } from '@/src/types/models';
 
 const extra = Constants.expoConfig?.extra ?? {};
@@ -52,7 +52,7 @@ export async function ensureGame(rawgId: number): Promise<string> {
 // ─── reviews CRUD ─────────────────────────────────────────────────────────────
 
 export async function createReview(gameId: string, draft: ReviewDraft): Promise<Review> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
 
   // Normaliza body vazio/whitespace para NULL — review sem texto é válida (só nota).
@@ -118,7 +118,7 @@ export async function deleteReview(reviewId: string): Promise<void> {
 }
 
 export async function getMyReview(gameId: string): Promise<Review | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return null;
 
   const { data, error } = await supabase

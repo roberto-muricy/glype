@@ -1,10 +1,10 @@
-import { supabase } from '@/src/lib/supabase';
+import { getSessionUser, supabase } from '@/src/lib/supabase';
 import type { FeedItem, FollowCounts } from '@/src/types/models';
 
 // ─── Feed ─────────────────────────────────────────────────────────────────────
 
 export async function getFeed(limit = 20): Promise<FeedItem[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return [];
 
   const { data: follows } = await supabase
@@ -34,7 +34,7 @@ export async function getFeed(limit = 20): Promise<FeedItem[]> {
 // ─── Follows ──────────────────────────────────────────────────────────────────
 
 export async function followUser(targetId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
 
   const { error } = await supabase
@@ -45,7 +45,7 @@ export async function followUser(targetId: string): Promise<void> {
 }
 
 export async function unfollowUser(targetId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
 
   const { error } = await supabase
@@ -58,7 +58,7 @@ export async function unfollowUser(targetId: string): Promise<void> {
 }
 
 export async function isFollowing(targetId: string): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return false;
 
   const { data } = await supabase
@@ -120,7 +120,7 @@ export async function getFollowing(userId: string, limit = 50) {
 export async function getSuggestedUsers(limit = 12): Promise<{
   id: string; username: string; display_name: string | null; avatar_url: string | null; favorite_genres: string[];
 }[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   const { data, error } = await supabase
     .from('profiles')

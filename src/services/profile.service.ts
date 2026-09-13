@@ -1,4 +1,4 @@
-import { supabase } from '@/src/lib/supabase';
+import { getSessionUser, supabase } from '@/src/lib/supabase';
 import type { Profile } from '@/src/types/models';
 
 export interface ProfileUpdate {
@@ -9,7 +9,7 @@ export interface ProfileUpdate {
 }
 
 export async function updateProfile(update: ProfileUpdate): Promise<Profile> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
 
   const { data, error } = await supabase
