@@ -1,5 +1,6 @@
 import { getSessionUser, supabase } from '@/src/lib/supabase';
 import type { NotificationItem, NotificationType } from '@/src/types/models';
+import type { ReportReason, ReportTargetType } from '@/src/services/moderation.service';
 
 // Shape cru retornado pelo Supabase (joins aninhados).
 interface RawNotification {
@@ -17,6 +18,8 @@ interface RawNotification {
     id: string;
     game: { title: string; rawg_id: number | null } | null;
   } | null;
+  // Só vem preenchido pra admins (policy reports_select_admin, migration 0012).
+  report: { reason: string; target_type: string } | null;
 }
 
 /** Lista as notificações do usuário logado, mais recentes primeiro. */
@@ -32,7 +35,8 @@ export async function getNotifications(limit = 50): Promise<NotificationItem[]> 
       is_read,
       created_at,
       actor:profiles!actor_id ( id, username, display_name, avatar_url ),
-      review:reviews ( id, game:games ( title, rawg_id ) )
+      review:reviews ( id, game:games ( title, rawg_id ) ),
+      report:reports ( reason, target_type )
     `)
     .eq('recipient_id', user.id)
     .order('created_at', { ascending: false })
@@ -55,6 +59,12 @@ export async function getNotifications(limit = 50): Promise<NotificationItem[]> 
             id: r.review.id,
             game_title: r.review.game?.title ?? 'um jogo',
             game_rawg_id: r.review.game?.rawg_id ?? null,
+          }
+        : null,
+      report: r.report
+        ? {
+            reason: r.report.reason as ReportReason,
+            target_type: r.report.target_type as ReportTargetType,
           }
         : null,
     }));

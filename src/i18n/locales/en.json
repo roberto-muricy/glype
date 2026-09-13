@@ -439,7 +439,10 @@
     "startedFollowing": " started following you",
     "commentedOnReview": " commented on your review of {{title}}",
     "likedYourReview": " liked your review of {{title}}",
-    "aGame": "a game"
+    "aGame": "a game",
+    "reportedReview": "'s review of {{title}} was reported for {{reason}}",
+    "reportedComment": "'s comment was reported for {{reason}}",
+    "reportedUser": " was reported for {{reason}}"
   },
   "language": {
     "selectLanguage": "Select language",

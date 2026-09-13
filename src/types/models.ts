@@ -1,3 +1,4 @@
+import type { ReportReason, ReportTargetType } from '@/src/services/moderation.service';
 // Interfaces de domínio (modelo lido pela aplicação).
 // Espelha as colunas que o app realmente lê em cada tabela.
 
@@ -125,7 +126,7 @@ export interface FavoriteGame {
   };
 }
 
-export type NotificationType = 'like' | 'follow' | 'comment';
+export type NotificationType = 'like' | 'follow' | 'comment' | 'report';
 
 export interface ReviewComment {
   id: string;
@@ -151,11 +152,16 @@ export interface NotificationItem {
     display_name: string | null;
     avatar_url: string | null;
   };
-  /** Presente apenas em notificações do tipo 'like' */
+  /** Presente em 'like', 'comment' e em 'report' quando o alvo é review ou comentário. */
   review: {
     id: string;
     game_title: string;
     game_rawg_id: number | null;
+  } | null;
+  /** Presente apenas em 'report' (só admins recebem esse tipo). */
+  report: {
+    reason: ReportReason;
+    target_type: ReportTargetType;
   } | null;
 }
 
