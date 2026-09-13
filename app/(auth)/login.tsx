@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/src/hooks/useAuth';
 import { Button, GlypeLogo, Input, Toast } from '@/src/components/ui';
 import { tokens } from '@/src/theme/tokens';
+import { isSignInCanceled } from '@/src/utils/authErrors';
 
 export default function LoginScreen() {
   const { signIn, signInWithApple, signInWithGoogle } = useAuth();
@@ -32,6 +33,10 @@ export default function LoginScreen() {
   const [socialBtnWidth, setSocialBtnWidth] = useState(0);
 
   const socialBusy = appleLoading || googleLoading;
+  // Trava síncrona contra toque duplo: `socialBusy` só atualiza no próximo
+  // render, então dois toques rápidos passariam. No iOS, uma segunda
+  // solicitação da Apple encerra a primeira com erro genérico (código 1000).
+  const socialInFlight = useRef(false);
 
   const onSubmit = async (): Promise<void> => {
     setError(null);
@@ -46,44 +51,35 @@ export default function LoginScreen() {
   };
 
   const onAppleSignIn = async (): Promise<void> => {
+    if (socialInFlight.current) return;
+    socialInFlight.current = true;
     setError(null);
     setAppleLoading(true);
     try {
       await signInWithApple();
       // Navigation handled automatically by AuthGate / onAuthStateChange
     } catch (e: unknown) {
-      // ERR_REQUEST_CANCELED = user dismissed the sheet — silent
-      if (
-        e &&
-        typeof e === 'object' &&
-        'code' in e &&
-        (e as { code: string }).code === 'ERR_REQUEST_CANCELED'
-      ) {
-        return;
-      }
+      if (isSignInCanceled(e)) return; // usuário fechou a janela — silencioso
       setError(e instanceof Error ? e.message : t('auth.errorWithApple'));
     } finally {
+      socialInFlight.current = false;
       setAppleLoading(false);
     }
   };
 
   const onGoogleSignIn = async (): Promise<void> => {
+    if (socialInFlight.current) return;
+    socialInFlight.current = true;
     setError(null);
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
       // Navigation handled automatically by AuthGate / onAuthStateChange
     } catch (e: unknown) {
-      // SIGN_IN_CANCELLED (code '12501' / 'SIGN_IN_CANCELLED') = usuário fechou — silencioso
-      const code =
-        e && typeof e === 'object' && 'code' in e
-          ? String((e as { code: string }).code)
-          : '';
-      if (code.includes('CANCEL') || code === '12501' || code === '-5') {
-        return;
-      }
+      if (isSignInCanceled(e)) return; // usuário fechou o seletor — silencioso
       setError(e instanceof Error ? e.message : t('auth.errorWithGoogle'));
     } finally {
+      socialInFlight.current = false;
       setGoogleLoading(false);
     }
   };
@@ -167,13 +163,20 @@ export default function LoginScreen() {
                 O componente nativo exige width/height numéricos fixos:
                 usamos a largura medida do container. */}
             {Platform.OS === 'ios' && socialBtnWidth > 0 && (
-              <AppleAuthentication.AppleAuthenticationButton
-                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
-                cornerRadius={12}
-                style={{ width: socialBtnWidth, height: 48 }}
-                onPress={onAppleSignIn}
-              />
+              // O botão nativo não tem `disabled`: o wrapper bloqueia toques e
+              // esmaece enquanto um login social está em andamento, como o do Google.
+              <View
+                pointerEvents={socialBusy ? 'none' : 'auto'}
+                style={socialBusy ? styles.socialBusy : undefined}
+              >
+                <AppleAuthentication.AppleAuthenticationButton
+                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                  cornerRadius={12}
+                  style={{ width: socialBtnWidth, height: 48 }}
+                  onPress={onAppleSignIn}
+                />
+              </View>
             )}
 
             {/* Google Sign In — iOS + Android */}
@@ -182,7 +185,7 @@ export default function LoginScreen() {
               disabled={socialBusy}
               accessibilityRole="button"
               accessibilityLabel={t('auth.signInWithGoogle')}
-              style={[styles.googleButton, socialBusy && { opacity: 0.6 }]}
+              style={[styles.googleButton, socialBusy && styles.socialBusy]}
             >
               <Ionicons name="logo-google" size={18} color="#1F1F1F" />
               <Text style={styles.googleButtonText}>
@@ -210,6 +213,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
+  },
+  socialBusy: {
+    opacity: 0.6,
   },
   googleButtonText: {
     fontFamily: tokens.fontFamily.medium,

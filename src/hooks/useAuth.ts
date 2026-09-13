@@ -14,6 +14,7 @@ import {
 import { deleteAccount as deleteAccountService } from '@/src/services/account.service';
 import { identify, resetAnalytics, track } from '@/src/lib/analytics';
 import { setSentryUser, captureException } from '@/src/lib/sentry';
+import { isSignInCanceled } from '@/src/utils/authErrors';
 import type { Profile } from '@/src/types/models';
 
 // Hidrata o store a partir da sessão persistida (SecureStore) e
@@ -113,8 +114,13 @@ export function useAuth() {
       await signInWithAppleService();
       track('signin_succeeded', { method: 'apple' });
     } catch (e) {
-      track('signin_failed', { method: 'apple' });
-      captureException(e, { provider: 'apple' });
+      // Fechar a janela não é falha: sem alerta no Sentry e sem signin_failed.
+      if (isSignInCanceled(e)) {
+        track('signin_canceled', { method: 'apple' });
+      } else {
+        track('signin_failed', { method: 'apple' });
+        captureException(e, { provider: 'apple' });
+      }
       throw e;
     }
   };
@@ -124,8 +130,12 @@ export function useAuth() {
       await signInWithGoogleService();
       track('signin_succeeded', { method: 'google' });
     } catch (e) {
-      track('signin_failed', { method: 'google' });
-      captureException(e, { provider: 'google' });
+      if (isSignInCanceled(e)) {
+        track('signin_canceled', { method: 'google' });
+      } else {
+        track('signin_failed', { method: 'google' });
+        captureException(e, { provider: 'google' });
+      }
       throw e;
     }
   };

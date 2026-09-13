@@ -1,6 +1,7 @@
 import type { Session, User } from '@supabase/supabase-js';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from '@/src/lib/supabase';
+import { googleSignInCanceledError } from '@/src/utils/authErrors';
 
 // Google Sign-In requer um dev build com módulo nativo (não funciona em Expo Go).
 // Carregamos preguiçosamente e ignoramos erro caso o módulo não esteja disponível.
@@ -85,6 +86,11 @@ export async function signInWithGoogle(): Promise<void> {
 
   // Abre o seletor nativo de contas
   const result = await GoogleSignin.signIn();
+
+  // O SDK v16 não rejeita quando o usuário fecha o seletor: resolve com
+  // { type: 'cancelled' }. Sem este check caía no "não retornou token" abaixo,
+  // mostrando erro na tela e gerando alerta no Sentry por um cancelamento.
+  if (result.type === 'cancelled') throw googleSignInCanceledError();
 
   // SDK v16: o token vem em result.data.idToken
   const idToken = result.data?.idToken;

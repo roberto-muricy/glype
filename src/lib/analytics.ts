@@ -60,6 +60,8 @@ type EventProps = Record<string, string | number | boolean | null | undefined>;
  *   - `language_changed` { from, to }
  *   - `signup_succeeded` { method }  // method: 'email' | 'apple' | 'google'
  *   - `signin_succeeded` { method }
+ *   - `signin_failed` { method }     // falha real — também vai pro Sentry
+ *   - `signin_canceled` { method }   // usuário fechou a janela da Apple/Google
  *   - `signout` {}
  */
 export function track(event: string, props?: EventProps): void {
