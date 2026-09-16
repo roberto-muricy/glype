@@ -12,11 +12,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { EmptyState, Skeleton } from '@/src/components/ui';
 import { GameCard } from '@/src/components/domain';
 import { useMyLibrary, useSetGameStatus, useRemoveFromLibrary } from '@/src/hooks/useLibrary';
 import { hapticMedium, hapticHeavy } from '@/src/utils/haptics';
-import { GAME_STATUS_LABEL, type GameStatus, type UserGame } from '@/src/types/models';
+import { useGameStatusLabel } from '@/src/i18n/useGameStatusLabel';
+import { type GameStatus, type UserGame } from '@/src/types/models';
 import { tokens } from '@/src/theme/tokens';
 import { LibraryIcon, SearchIcon } from '@/src/components/ui/icons';
 
@@ -27,27 +29,29 @@ type SortValue = 'recent' | 'az' | 'score';
 
 const STATUS_LIST: GameStatus[] = ['playing', 'played', 'wishlist', 'dropped'];
 
-const SORT_OPTIONS: { value: SortValue; label: string }[] = [
-  { value: 'recent', label: 'Recentes' },
-  { value: 'az', label: 'A–Z' },
-  { value: 'score', label: 'Nota' },
-];
-
-const EMPTY_MESSAGES: Record<FilterValue, { title: string; subtitle: string }> = {
-  all: { title: 'Biblioteca vazia', subtitle: 'Adicione jogos tocando em + ou na tela de detalhes.' },
-  playing: { title: 'Nenhum em andamento', subtitle: 'Marque um jogo como "Jogando" para aparecer aqui.' },
-  played: { title: 'Nenhum concluído', subtitle: 'Marque jogos que você já terminou.' },
-  wishlist: { title: 'Wishlist vazia', subtitle: 'Salve jogos que quer jogar no futuro.' },
-  dropped: { title: 'Nenhum dropado', subtitle: 'Jogos que você parou de jogar aparecem aqui.' },
-};
-
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function LibraryScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const GAME_STATUS_LABEL = useGameStatusLabel();
   const [filter, setFilter] = useState<FilterValue>('all');
   const [sort, setSort] = useState<SortValue>('recent');
   const [query, setQuery] = useState('');
+
+  const SORT_OPTIONS: { value: SortValue; label: string }[] = [
+    { value: 'recent', label: t('library.sortRecent') },
+    { value: 'az', label: t('library.sortAZ') },
+    { value: 'score', label: t('library.sortScore') },
+  ];
+
+  const EMPTY_MESSAGES: Record<FilterValue, { title: string; subtitle: string }> = {
+    all: { title: t('library.emptyAllTitle'), subtitle: t('library.emptyAllSubtitle') },
+    playing: { title: t('library.emptyPlayingTitle'), subtitle: t('library.emptyPlayingSubtitle') },
+    played: { title: t('library.emptyPlayedTitle'), subtitle: t('library.emptyPlayedSubtitle') },
+    wishlist: { title: t('library.emptyWishlistTitle'), subtitle: t('library.emptyWishlistSubtitle') },
+    dropped: { title: t('library.emptyDroppedTitle'), subtitle: t('library.emptyDroppedSubtitle') },
+  };
 
   // Load all games once, filter client-side (library is typically small)
   const { data: allGames, isLoading } = useMyLibrary();
@@ -88,7 +92,7 @@ export default function LibraryScreen() {
     const statusOptions = STATUS_LIST.filter((s) => s !== item.status).map(
       (s) => GAME_STATUS_LABEL[s],
     );
-    const options = ['Cancelar', ...statusOptions, 'Remover da biblioteca'];
+    const options = [t('common.cancel'), ...statusOptions, t('library.removeFromLibrary')];
 
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
@@ -111,20 +115,20 @@ export default function LibraryScreen() {
         },
       );
     } else {
-      Alert.alert(item.game.title, 'O que deseja fazer?', [
+      Alert.alert(item.game.title, t('library.longPressAction'), [
         ...STATUS_LIST.filter((s) => s !== item.status).map((s) => ({
           text: GAME_STATUS_LABEL[s],
           onPress: () => setGameStatus.mutate({ gameId: item.game_id, status: s }),
         })),
         {
-          text: 'Remover',
+          text: t('common.remove'),
           style: 'destructive' as const,
           onPress: () => removeGame.mutate(item.game_id),
         },
-        { text: 'Cancelar', style: 'cancel' as const },
+        { text: t('common.cancel'), style: 'cancel' as const },
       ]);
     }
-  }, [setGameStatus, removeGame]);
+  }, [setGameStatus, removeGame, t, GAME_STATUS_LABEL]);
 
   const renderItem: ListRenderItem<UserGame> = useCallback(
     ({ item }) => (
@@ -157,12 +161,12 @@ export default function LibraryScreen() {
     <SafeAreaView className="flex-1 bg-bg-primary" edges={['top']}>
       {/* ─── Header ─── */}
       <View className="flex-row items-center justify-between px-5 pt-4 pb-3">
-        <Text className="text-h1 text-text-primary">Biblioteca</Text>
+        <Text className="text-h1 text-text-primary">{t('library.title')}</Text>
         <Pressable
           onPress={() => router.push('/review/pick-game' as never)}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Adicionar jogo"
+          accessibilityLabel={t('library.addGame')}
           style={{
             width: 32,
             height: 32,
@@ -185,7 +189,7 @@ export default function LibraryScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Buscar na biblioteca…"
+          placeholder={t('library.searchInLibrary')}
           placeholderTextColor={tokens.color.text.tertiary}
           autoCorrect={false}
           autoCapitalize="none"
@@ -208,7 +212,7 @@ export default function LibraryScreen() {
       <View style={{ flexDirection: 'row', paddingHorizontal: 20, gap: 6, marginBottom: 4 }}>
         {(['all', ...STATUS_LIST] as FilterValue[]).map((v) => {
           const active = filter === v;
-          const label = v === 'all' ? 'Todos' : GAME_STATUS_LABEL[v];
+          const label = v === 'all' ? t('library.all') : GAME_STATUS_LABEL[v];
           const count = counts[v];
           return (
             <Pressable
@@ -265,7 +269,7 @@ export default function LibraryScreen() {
       {/* ─── Sort row ─── */}
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 6, gap: 6 }}>
         <Text style={{ fontFamily: tokens.fontFamily.regular, fontSize: 12, color: tokens.color.text.tertiary }}>
-          Ordenar:
+          {t('library.sortBy')}
         </Text>
         {SORT_OPTIONS.map((opt) => {
           const active = sort === opt.value;
@@ -293,7 +297,7 @@ export default function LibraryScreen() {
         {/* Result count */}
         {!isLoading && (
           <Text style={{ fontFamily: tokens.fontFamily.regular, fontSize: 12, color: tokens.color.text.tertiary, marginLeft: 'auto' }}>
-            {displayed.length} {displayed.length === 1 ? 'jogo' : 'jogos'}
+            {displayed.length} {displayed.length === 1 ? t('library.gameSingular') : t('library.gamePlural')}
           </Text>
         )}
       </View>
@@ -323,8 +327,8 @@ export default function LibraryScreen() {
             query.length > 0 ? (
               <EmptyState
                 icon={<SearchIcon size={28} color={tokens.color.text.tertiary} />}
-                title="Sem resultados"
-                subtitle={`Nenhum jogo com "${query}" na sua biblioteca.`}
+                title={t('library.noSearchResultsTitle')}
+                subtitle={t('library.noSearchResultsSubtitle', { query })}
               />
             ) : (
               <EmptyState

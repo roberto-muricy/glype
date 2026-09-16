@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { useAuthStore } from '@/src/stores/auth';
+import { queryClient } from '@/src/lib/queryClient';
 import {
   signIn as signInService,
   signOut as signOutService,
@@ -10,6 +11,10 @@ import {
   type SignInInput,
   type SignUpInput,
 } from '@/src/services/auth.service';
+import { deleteAccount as deleteAccountService } from '@/src/services/account.service';
+import { identify, resetAnalytics, track } from '@/src/lib/analytics';
+import { setSentryUser, captureException } from '@/src/lib/sentry';
+import { isSignInCanceled } from '@/src/utils/authErrors';
 import type { Profile } from '@/src/types/models';
 
 // Hidrata o store a partir da sessão persistida (SecureStore) e
@@ -49,8 +54,12 @@ export function useAuthBootstrap(): void {
       setSession(session);
       if (session?.user) {
         fetchProfile(session.user.id);
+        // Identify user em analytics + Sentry (sem PII — só o id do Supabase)
+        identify(session.user.id);
+        setSentryUser(session.user.id);
       } else {
         setProfile(null);
+        setSentryUser(null);
       }
     });
 
@@ -70,24 +79,86 @@ export function useAuth() {
   const reset = useAuthStore((s) => s.reset);
 
   const signIn = async (input: SignInInput): Promise<void> => {
-    await signInService(input);
+    try {
+      await signInService(input);
+      track('signin_succeeded', { method: 'email' });
+    } catch (e) {
+      track('signin_failed', { method: 'email' });
+      throw e;
+    }
   };
 
   const signUp = async (input: SignUpInput): Promise<void> => {
-    await signUpService(input);
+    try {
+      await signUpService(input);
+      track('signup_succeeded', { method: 'email' });
+    } catch (e) {
+      track('signup_failed', { method: 'email' });
+      throw e;
+    }
   };
 
   const signOut = async (): Promise<void> => {
+    track('signout');
     await signOutService();
     reset();
+    resetAnalytics();
+    setSentryUser(null);
+    // Limpa o cache do TanStack Query — evita exibir dados do usuário
+    // anterior caso outro usuário faça login em seguida no mesmo device.
+    queryClient.clear();
   };
 
   const signInWithApple = async (): Promise<void> => {
-    await signInWithAppleService();
+    try {
+      await signInWithAppleService();
+      track('signin_succeeded', { method: 'apple' });
+    } catch (e) {
+      // Fechar a janela não é falha: sem alerta no Sentry e sem signin_failed.
+      if (isSignInCanceled(e)) {
+        track('signin_canceled', { method: 'apple' });
+      } else {
+        track('signin_failed', { method: 'apple' });
+        captureException(e, { provider: 'apple' });
+      }
+      throw e;
+    }
   };
 
   const signInWithGoogle = async (): Promise<void> => {
-    await signInWithGoogleService();
+    try {
+      await signInWithGoogleService();
+      track('signin_succeeded', { method: 'google' });
+    } catch (e) {
+      if (isSignInCanceled(e)) {
+        track('signin_canceled', { method: 'google' });
+      } else {
+        track('signin_failed', { method: 'google' });
+        captureException(e, { provider: 'google' });
+      }
+      throw e;
+    }
+  };
+
+  /**
+   * Exclui permanentemente a conta do usuário.
+   * Chama a Edge Function `delete-account` e depois faz signOut local
+   * (limpando store, sessão e cache).
+   */
+  const deleteAccount = async (): Promise<void> => {
+    track('account_deleted');
+    await deleteAccountService();
+    // Depois do delete remoto, força um signOut local pra invalidar a sessão
+    // armazenada (SecureStore) e disparar o AuthGate de volta pro login.
+    try {
+      await signOutService();
+    } catch {
+      // sessão pode já estar inválida no servidor — segue limpando estado
+    }
+    reset();
+    resetAnalytics();
+    setSentryUser(null);
+    queryClient.clear();
   };
 
   return {
@@ -100,5 +171,6 @@ export function useAuth() {
     signOut,
     signInWithApple,
     signInWithGoogle,
+    deleteAccount,
   };
 }

@@ -22,3 +22,7 @@ export { CollectionCard } from './CollectionCard';
 export type { CollectionCardProps } from './CollectionCard';
 export { TopGamesRow, TopGamesEmptyCTA } from './TopGamesRow';
 export type { TopGamesRowProps, TopGamesEmptyCTAProps } from './TopGamesRow';
+export { SwipeCard } from './SwipeCard';
+export type { SwipeCardProps, SwipeDirection } from './SwipeCard';
+export { SwipeDeck } from './SwipeDeck';
+export type { SwipeDeckProps } from './SwipeDeck';

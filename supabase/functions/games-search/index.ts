@@ -26,7 +26,11 @@ Deno.serve(async (req: Request) => {
         searchGameByName(query),
       ]);
 
-      const rawgGames = rawgRes.status === 'fulfilled' ? rawgRes.value.results : [];
+      // Sem a RAWG não há resultado de verdade: lança em vez de devolver [] —
+      // senão o withCache grava a busca vazia por 1h (agora ainda mais provável,
+      // com o timeout do rawgFetch). A IGDB segue opcional.
+      if (rawgRes.status === 'rejected') throw rawgRes.reason;
+      const rawgGames = rawgRes.value.results;
       const igdbGames = igdbRes.status === 'fulfilled' ? igdbRes.value : [];
 
       // Indexa resultados IGDB por nome (normalizado) para merge

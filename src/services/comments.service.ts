@@ -1,4 +1,4 @@
-import { supabase } from '@/src/lib/supabase';
+import { getSessionUser, supabase } from '@/src/lib/supabase';
 import type { ReviewComment } from '@/src/types/models';
 
 // Shape cru retornado pelo Supabase (join aninhado).
@@ -15,9 +15,22 @@ interface RawComment {
   } | null;
 }
 
-/** Lista comentários de uma review, mais antigos primeiro (conversa cronológica). */
+/** Lista comentários de uma review, mais antigos primeiro (conversa cronológica).
+ *  Filtra comentários de usuários bloqueados pelo viewer. */
 export async function getReviewComments(reviewId: string): Promise<ReviewComment[]> {
-  const { data, error } = await supabase
+  // 1. Buscar lista de bloqueados (única query extra — RLS impede ver os outros)
+  const user = await getSessionUser();
+  let blockedIds: string[] = [];
+  if (user) {
+    const { data: blocks } = await supabase
+      .from('user_blocks')
+      .select('blocked_id')
+      .eq('blocker_id', user.id);
+    blockedIds = (blocks ?? []).map((b) => b.blocked_id);
+  }
+
+  // 2. Buscar comments — exclui bloqueados via .not('user_id', 'in', ...)
+  let query = supabase
     .from('review_comments')
     .select(`
       id,
@@ -29,6 +42,11 @@ export async function getReviewComments(reviewId: string): Promise<ReviewComment
     .eq('review_id', reviewId)
     .order('created_at', { ascending: true });
 
+  if (blockedIds.length > 0) {
+    query = query.not('user_id', 'in', `(${blockedIds.join(',')})`);
+  }
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
 
   const rows = (data ?? []) as unknown as RawComment[];
@@ -48,7 +66,7 @@ export async function createComment(
   reviewId: string,
   body: string,
 ): Promise<ReviewComment> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
 
   const trimmed = body.trim();
@@ -96,4 +114,28 @@ export async function getCommentCount(reviewId: string): Promise<number> {
     .eq('review_id', reviewId);
   if (error) throw new Error(error.message);
   return count ?? 0;
+}
+
+/**
+ * Batch: conta comentários de múltiplas reviews numa só query.
+ * Usado no feed pra evitar N+1 queries.
+ */
+export async function getBatchCommentCounts(
+  reviewIds: string[],
+): Promise<Record<string, number>> {
+  if (reviewIds.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from('review_comments')
+    .select('review_id')
+    .in('review_id', reviewIds);
+
+  if (error) throw new Error(error.message);
+
+  const counts: Record<string, number> = {};
+  for (const id of reviewIds) counts[id] = 0;
+  for (const row of data ?? []) {
+    counts[row.review_id] = (counts[row.review_id] ?? 0) + 1;
+  }
+  return counts;
 }

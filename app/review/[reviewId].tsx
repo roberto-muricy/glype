@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,8 +13,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Avatar, Button, Tag } from '@/src/components/ui';
+import { ActionSheet, Avatar, Button, ReportSheet, Tag, Toast } from '@/src/components/ui';
+import { EllipsisIcon } from '@/src/components/ui/icons';
+import { useBlockUser, useIsBlocked, useUnblockUser } from '@/src/hooks/useModeration';
 import { ScoreBadge } from '@/src/components/domain';
 import { useReviewDetail } from '@/src/hooks/useProfile';
 import { useIsFollowing, useFollowUser, useUnfollowUser } from '@/src/hooks/useFeed';
@@ -39,6 +42,7 @@ import type { ReviewComment } from '@/src/types/models';
 
 export default function ReviewDetailScreen() {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
   const { reviewId } = useLocalSearchParams<{ reviewId: string }>();
   const currentUser = useAuthStore((s) => s.user);
 
@@ -56,6 +60,82 @@ export default function ReviewDetailScreen() {
   const createComment = useCreateComment();
   const deleteComment = useDeleteComment();
   const [commentText, setCommentText] = useState('');
+  const [reviewMenuOpen, setReviewMenuOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<
+    | { type: 'review'; id: string; userId: string }
+    | { type: 'comment'; id: string; userId: string }
+    | null
+  >(null);
+  const [modToast, setModToast] = useState<{ variant: 'success' | 'danger'; title: string } | null>(null);
+  const { data: blockedByMe } = useIsBlocked(isMe ? null : review?.user.id ?? null);
+  const blockUser = useBlockUser();
+  const unblockUser = useUnblockUser();
+
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (!modToast) return;
+    const id = setTimeout(() => setModToast(null), 3000);
+    return () => clearTimeout(id);
+  }, [modToast]);
+
+  const handleReportReview = () => {
+    if (!review) return;
+    setReviewMenuOpen(false);
+    setTimeout(() => {
+      setReportTarget({ type: 'review', id: review.id, userId: review.user.id });
+    }, 250);
+  };
+
+  const handleBlockAuthor = () => {
+    if (!review) return;
+    setReviewMenuOpen(false);
+    const targetId = review.user.id;
+    const username = review.user.username;
+    Alert.alert(
+      t('block.confirmTitle', { username }),
+      t('block.confirmMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('block.confirmAction'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await blockUser.mutateAsync(targetId);
+              setModToast({ variant: 'success', title: t('block.blocked', { username }) });
+              setTimeout(() => router.back(), 800);
+            } catch (e) {
+              setModToast({
+                variant: 'danger',
+                title: e instanceof Error ? e.message : t('common.unknownError'),
+              });
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleUnblockAuthor = async () => {
+    if (!review) return;
+    setReviewMenuOpen(false);
+    try {
+      await unblockUser.mutateAsync(review.user.id);
+      setModToast({
+        variant: 'success',
+        title: t('block.unblocked', { username: review.user.username }),
+      });
+    } catch (e) {
+      setModToast({
+        variant: 'danger',
+        title: e instanceof Error ? e.message : t('common.unknownError'),
+      });
+    }
+  };
+
+  const handleReportComment = (commentId: string, commentUserId: string) => {
+    setReportTarget({ type: 'comment', id: commentId, userId: commentUserId });
+  };
 
   const handleSendComment = async () => {
     const body = commentText.trim();
@@ -64,7 +144,7 @@ export default function ReviewDetailScreen() {
       await createComment.mutateAsync({ reviewId, body });
       setCommentText('');
     } catch (e) {
-      Alert.alert('Erro', e instanceof Error ? e.message : 'Não foi possível enviar');
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('review.couldNotSend'));
     }
   };
 
@@ -88,7 +168,7 @@ export default function ReviewDetailScreen() {
         </View>
         <View className="flex-1 items-center justify-center gap-3">
           <ChatBubbleIcon size={40} color={tokens.color.text.tertiary} />
-          <Text className="text-body-lg text-text-secondary">Review não encontrada</Text>
+          <Text className="text-body-lg text-text-secondary">{t('review.notFound')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -102,32 +182,91 @@ export default function ReviewDetailScreen() {
       {/* ─── Header ─── */}
       <View className="flex-row items-center justify-between px-4 py-2">
         <BackButton onPress={() => router.back()} />
-        <Pressable
-          onPress={() =>
-            liked
-              ? unlike.mutate({ reviewId: reviewId! })
-              : like.mutate({ reviewId: reviewId! })
-          }
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel={liked ? 'Descurtir' : 'Curtir'}
-          className="flex-row items-center gap-1.5 px-1"
-        >
-          {liked
-            ? <HeartIcon size={20} color={tokens.color.semantic.danger} />
-            : <HeartOutlineIcon size={20} color={tokens.color.text.secondary} />
-          }
-          <Text
-            style={{
-              fontFamily: tokens.fontFamily.monoMedium,
-              fontSize: 14,
-              color: liked ? tokens.color.semantic.danger : tokens.color.text.secondary,
-            }}
+        <View className="flex-row items-center gap-3">
+          <Pressable
+            onPress={() =>
+              liked
+                ? unlike.mutate({ reviewId: reviewId! })
+                : like.mutate({ reviewId: reviewId! })
+            }
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={liked ? t('review.unlike') : t('review.like')}
+            className="flex-row items-center gap-1.5 px-1"
           >
-            {likesCount}
-          </Text>
-        </Pressable>
+            {liked
+              ? <HeartIcon size={20} color={tokens.color.semantic.danger} />
+              : <HeartOutlineIcon size={20} color={tokens.color.text.secondary} />
+            }
+            <Text
+              style={{
+                fontFamily: tokens.fontFamily.monoMedium,
+                fontSize: 14,
+                color: liked ? tokens.color.semantic.danger : tokens.color.text.secondary,
+              }}
+            >
+              {likesCount}
+            </Text>
+          </Pressable>
+          {!isMe && (
+            <Pressable
+              onPress={() => setReviewMenuOpen(true)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.open')}
+              className="p-1"
+            >
+              <EllipsisIcon size={20} color={tokens.color.text.secondary} />
+            </Pressable>
+          )}
+        </View>
       </View>
+
+      {/* Toast de feedback */}
+      {modToast && (
+        <View style={{ position: 'absolute', top: 56, left: 20, right: 20, zIndex: 99 }}>
+          <Toast variant={modToast.variant} title={modToast.title} />
+        </View>
+      )}
+
+      {/* Menu da review (não-dono) */}
+      {!isMe && review && (
+        <ActionSheet
+          visible={reviewMenuOpen}
+          onClose={() => setReviewMenuOpen(false)}
+          title={`@${review.user.username}`}
+          actions={[
+            {
+              label: t('report.reportReview'),
+              onPress: handleReportReview,
+            },
+            blockedByMe
+              ? {
+                  label: t('block.unblockUser'),
+                  onPress: handleUnblockAuthor,
+                }
+              : {
+                  label: t('block.blockUser'),
+                  destructive: true,
+                  onPress: handleBlockAuthor,
+                },
+          ]}
+        />
+      )}
+
+      {/* Sheet de denúncia (review ou comentário) */}
+      {reportTarget && (
+        <ReportSheet
+          visible={reportTarget !== null}
+          onClose={() => setReportTarget(null)}
+          targetType={reportTarget.type}
+          targetId={reportTarget.id}
+          reportedUserId={reportTarget.userId}
+          onSuccess={() =>
+            setModToast({ variant: 'success', title: t('report.successTitle') })
+          }
+        />
+      )}
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -143,7 +282,7 @@ export default function ReviewDetailScreen() {
         <Pressable
           onPress={() => review.game.rawg_id != null && router.push(`/game/${review.game.rawg_id}` as never)}
           accessibilityRole="button"
-          accessibilityLabel={`Ver detalhes de ${review.game.title}`}
+          accessibilityLabel={t('review.viewDetailsOfGame', { title: review.game.title })}
         >
           <View style={{ height: 200, backgroundColor: tokens.color.bg.surface }}>
             {(review.game.background_url ?? review.game.cover_url) ? (
@@ -193,13 +332,13 @@ export default function ReviewDetailScreen() {
         <View className="flex-row items-center gap-3 px-5 pt-4 pb-3 flex-wrap">
           <ScoreBadge score={review.score} size="md" />
           {review.completed && (
-            <Tag label="Completou" variant="success" />
+            <Tag label={t('review.completedTag')} variant="success" />
           )}
           {review.has_spoiler && (
-            <Tag label="Spoiler" variant="danger" />
+            <Tag label={t('review.spoilerTag')} variant="danger" />
           )}
           {review.playtime_hours != null && (
-            <Tag label={`${review.playtime_hours}h jogadas`} variant="neutral" />
+            <Tag label={t('review.hoursPlayedTag', { hours: review.playtime_hours })} variant="neutral" />
           )}
         </View>
 
@@ -209,7 +348,7 @@ export default function ReviewDetailScreen() {
             onPress={() => router.push(`/profile/${review.user.id}` as never)}
             className="flex-row items-center gap-3"
             accessibilityRole="button"
-            accessibilityLabel={`Ver perfil de ${displayName}`}
+            accessibilityLabel={t('review.viewProfileOf', { name: displayName })}
           >
             <Avatar name={displayName} uri={review.user.avatar_url} size="md" />
             <View>
@@ -222,7 +361,7 @@ export default function ReviewDetailScreen() {
 
           {!isMe && (
             <Button
-              label={isFollowing ? 'Seguindo' : 'Seguir'}
+              label={isFollowing ? t('common.following') : t('common.follow')}
               size="sm"
               variant={isFollowing ? 'secondary' : 'primary'}
               loading={follow.isPending || unfollow.isPending}
@@ -235,21 +374,24 @@ export default function ReviewDetailScreen() {
           )}
         </View>
 
-        {/* ─── Review body ─── */}
+        {/* ─── Review body (opcional) + data ─── */}
         <View className="px-5 pt-5">
-          <Text
-            style={{
-              fontFamily: tokens.fontFamily.regular,
-              fontSize: 16,
-              lineHeight: 26,
-              color: tokens.color.text.body,
-            }}
-          >
-            {review.body}
-          </Text>
+          {review.body && (
+            <Text
+              style={{
+                fontFamily: tokens.fontFamily.regular,
+                fontSize: 16,
+                lineHeight: 26,
+                color: tokens.color.text.body,
+                marginBottom: 20,
+              }}
+            >
+              {review.body}
+            </Text>
+          )}
 
-          <Text className="text-caption text-text-tertiary mt-5">
-            {new Date(review.created_at).toLocaleDateString('pt-BR', {
+          <Text className="text-caption text-text-tertiary">
+            {new Date(review.created_at).toLocaleDateString(i18n.language, {
               day: 'numeric',
               month: 'long',
               year: 'numeric',
@@ -268,7 +410,7 @@ export default function ReviewDetailScreen() {
                 color: tokens.color.text.primary,
               }}
             >
-              Comentários
+              {t('review.comments')}
               {(comments?.length ?? 0) > 0 && (
                 <Text style={{ color: tokens.color.text.secondary }}> · {comments!.length}</Text>
               )}
@@ -283,7 +425,7 @@ export default function ReviewDetailScreen() {
               <TextInput
                 value={commentText}
                 onChangeText={setCommentText}
-                placeholder="Escreva um comentário…"
+                placeholder={t('review.commentPlaceholder')}
                 placeholderTextColor={tokens.color.text.tertiary}
                 multiline
                 maxLength={500}
@@ -302,7 +444,7 @@ export default function ReviewDetailScreen() {
                 disabled={!commentText.trim() || createComment.isPending}
                 hitSlop={6}
                 accessibilityRole="button"
-                accessibilityLabel="Enviar comentário"
+                accessibilityLabel={t('review.sendComment')}
                 style={{
                   width: 32,
                   height: 32,
@@ -330,7 +472,7 @@ export default function ReviewDetailScreen() {
             </View>
           ) : (comments?.length ?? 0) === 0 ? (
             <Text className="text-caption text-text-tertiary text-center py-4">
-              Seja o primeiro a comentar.
+              {t('review.firstComment')}
             </Text>
           ) : (
             <View className="gap-3">
@@ -342,12 +484,12 @@ export default function ReviewDetailScreen() {
                   onUserPress={() => router.push(`/profile/${c.user.id}` as never)}
                   onDelete={() =>
                     Alert.alert(
-                      'Excluir comentário?',
-                      'Essa ação não pode ser desfeita.',
+                      t('review.deleteCommentTitle'),
+                      t('review.deleteCommentText'),
                       [
-                        { text: 'Cancelar', style: 'cancel' },
+                        { text: t('common.cancel'), style: 'cancel' },
                         {
-                          text: 'Excluir',
+                          text: t('common.delete'),
                           style: 'destructive',
                           onPress: () =>
                             deleteComment.mutate({ commentId: c.id, reviewId: reviewId! }),
@@ -355,6 +497,7 @@ export default function ReviewDetailScreen() {
                       ],
                     )
                   }
+                  onReport={() => handleReportComment(c.id, c.user.id)}
                 />
               ))}
             </View>
@@ -365,7 +508,7 @@ export default function ReviewDetailScreen() {
         {review.game.rawg_id != null && (
           <View className="px-5 mt-6">
             <Button
-              label={`Ver ${review.game.title}`}
+              label={t('review.viewGame', { title: review.game.title })}
               variant="secondary"
               onPress={() => router.push(`/game/${review.game.rawg_id}` as never)}
             />
@@ -384,12 +527,15 @@ function CommentRow({
   isOwn,
   onUserPress,
   onDelete,
+  onReport,
 }: {
   comment: ReviewComment;
   isOwn: boolean;
   onUserPress: () => void;
   onDelete: () => void;
+  onReport?: () => void;
 }) {
+  const { t } = useTranslation();
   const displayName = comment.user.display_name ?? comment.user.username;
   return (
     <View className="flex-row gap-3">
@@ -412,17 +558,27 @@ function CommentRow({
               {relativeTime(comment.created_at)}
             </Text>
           </Pressable>
-          {isOwn && (
+          {isOwn ? (
             <Pressable
               onPress={onDelete}
               hitSlop={6}
               accessibilityRole="button"
-              accessibilityLabel="Excluir comentário"
+              accessibilityLabel={t('review.deleteComment')}
               style={{ padding: 4 }}
             >
               <TrashIcon size={14} color={tokens.color.text.tertiary} />
             </Pressable>
-          )}
+          ) : onReport ? (
+            <Pressable
+              onPress={onReport}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={t('report.reportComment')}
+              style={{ padding: 4 }}
+            >
+              <Text style={{ fontSize: 16, color: tokens.color.text.tertiary }}>⋯</Text>
+            </Pressable>
+          ) : null}
         </View>
         <Text
           style={{
@@ -441,16 +597,17 @@ function CommentRow({
 }
 
 function BackButton({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation();
   return (
     <Pressable
       onPress={onPress}
       hitSlop={8}
       accessibilityRole="button"
-      accessibilityLabel="Voltar"
+      accessibilityLabel={t('common.back')}
       className="flex-row items-center gap-1"
     >
       <ChevronLeftIcon size={20} color={tokens.color.brand.primary} />
-      <Text className="text-body text-brand-primary">Voltar</Text>
+      <Text className="text-body text-brand-primary">{t('common.back')}</Text>
     </Pressable>
   );
 }

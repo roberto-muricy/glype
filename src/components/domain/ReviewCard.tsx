@@ -6,7 +6,7 @@ import { hapticLight } from '@/src/utils/haptics';
 import { Avatar } from '../ui/Avatar';
 import { Tag } from '../ui/Tag';
 import { Card } from '../ui/Card';
-import { HeartIcon, HeartOutlineIcon } from '../ui/icons';
+import { ChatBubbleIcon, HeartIcon, HeartOutlineIcon } from '../ui/icons';
 import { ScoreBadge } from './ScoreBadge';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -27,11 +27,15 @@ export interface ReviewCardProps {
     title: string;
   };
   score: number;
-  body: string;
+  /** Texto da review. Opcional — quando ausente, o card mostra só score + tags. */
+  body?: string | null;
   tags?: ReviewCardTag[];
   liked?: boolean;
   likesCount?: number;
   onLikePress?: () => void;
+  /** Contagem de comentários — exibe ícone só se for >= 0 e onCommentPress estiver presente. */
+  commentsCount?: number;
+  onCommentPress?: () => void;
   className?: string;
 }
 
@@ -46,6 +50,8 @@ export function ReviewCard({
   liked = false,
   likesCount = 0,
   onLikePress,
+  commentsCount,
+  onCommentPress,
   className,
 }: ReviewCardProps) {
   const HeartComponent = liked ? HeartIcon : HeartOutlineIcon;
@@ -87,12 +93,14 @@ export function ReviewCard({
         <ScoreBadge score={score} size="sm" />
       </View>
 
-      <Text
-        className="text-body-lg text-text-body mt-3"
-        numberOfLines={variant === 'compact' ? 4 : undefined}
-      >
-        {body}
-      </Text>
+      {body != null && body.length > 0 && (
+        <Text
+          className="text-body-lg text-text-body mt-3"
+          numberOfLines={variant === 'compact' ? 4 : undefined}
+        >
+          {body}
+        </Text>
+      )}
 
       {tags != null && tags.length > 0 && (
         <View className="flex-row flex-wrap gap-2 mt-3">
@@ -102,7 +110,19 @@ export function ReviewCard({
         </View>
       )}
 
-      <View className="flex-row items-center justify-end mt-3">
+      <View className="flex-row items-center justify-end gap-4 mt-3">
+        {onCommentPress != null && (
+          <Pressable
+            onPress={onCommentPress}
+            accessibilityRole="button"
+            accessibilityLabel={`${commentsCount ?? 0} comentários`}
+            hitSlop={8}
+            className="flex-row items-center gap-1.5"
+          >
+            <ChatBubbleIcon size={16} color={tokens.color.text.secondary} />
+            <Text className="text-caption text-text-secondary">{commentsCount ?? 0}</Text>
+          </Pressable>
+        )}
         <AnimatedPressable
           onPress={handleLikePress}
           accessibilityRole="button"

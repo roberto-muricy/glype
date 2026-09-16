@@ -1,4 +1,4 @@
-import { useState, type ComponentProps } from 'react';
+import { useEffect, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -8,10 +8,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar, Button, Toast } from '@/src/components/ui';
+import { SwipeDeck, type SwipeDirection } from '@/src/components/domain';
 import { useUpdateProfile } from '@/src/hooks/useProfile';
 import { useSuggestedUsers, useFollowUser, useUnfollowUser } from '@/src/hooks/useFeed';
+import { useDiscoverQueue, useDismissGame, useWishlistFromDiscover } from '@/src/hooks/useDiscover';
+import { track } from '@/src/lib/analytics';
 import { tokens } from '@/src/theme/tokens';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
@@ -34,14 +38,15 @@ const GENRE_OPTIONS: { value: string; label: string; icon: IoniconName }[] = [
 ];
 
 const MIN_GENRES = 3;
-const TOTAL_STEPS = 2;
+const MIN_DISCOVER_SWIPES = 5;
+const TOTAL_STEPS = 3;
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const updateProfile = useUpdateProfile();
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +64,7 @@ export default function OnboardingScreen() {
     }
     try {
       await updateProfile.mutateAsync({ favorite_genres: selected });
-      setStep(2);
+      setStep(2); // discover swipe deck (opcional)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao salvar');
     }
@@ -95,6 +100,12 @@ export default function OnboardingScreen() {
           onSkip={handleFinish}
           loading={updateProfile.isPending}
           error={error}
+        />
+      ) : step === 2 ? (
+        <StepDiscover
+          genres={selected}
+          onContinue={() => setStep(3)}
+          onSkip={() => setStep(3)}
         />
       ) : (
         <StepFollow onFinish={handleFinish} />
@@ -378,5 +389,134 @@ function StepFollow({ onFinish }: { onFinish: () => void }) {
         )}
       </View>
     </ScrollView>
+  );
+}
+
+// ─── Step 2: Discover (swipe deck opcional) ──────────────────────────────────
+
+function StepDiscover({
+  genres,
+  onContinue,
+  onSkip,
+}: {
+  genres: string[];
+  onContinue: () => void;
+  onSkip: () => void;
+}) {
+  const { t } = useTranslation();
+  const { queue, isLoading, hasMore, prefetchMore, pop } = useDiscoverQueue(genres, 12);
+  const dismissMutation = useDismissGame();
+  const wishlistMutation = useWishlistFromDiscover();
+  const [swipeCount, setSwipeCount] = useState(0);
+
+  // Track open
+  useEffect(() => {
+    track('discover_opened', { source: 'onboarding' });
+  }, []);
+
+  // Prefetch
+  useEffect(() => {
+    if (queue.length <= 4 && hasMore && !isLoading) {
+      prefetchMore();
+    }
+  }, [queue.length, hasMore, isLoading, prefetchMore]);
+
+  const canContinue = swipeCount >= MIN_DISCOVER_SWIPES || queue.length === 0;
+
+  const handleSwipe = async (
+    game: { rawg_id: number | null },
+    direction: SwipeDirection,
+  ) => {
+    if (game.rawg_id == null) {
+      pop(game.rawg_id);
+      return;
+    }
+    const position = swipeCount;
+    setSwipeCount((c) => c + 1);
+    if (direction === 'right') {
+      wishlistMutation.mutate({ rawgId: game.rawg_id, position });
+    } else if (direction === 'left') {
+      dismissMutation.mutate({ rawgId: game.rawg_id, position });
+    }
+    // Up = ignora no onboarding (não abrimos detalhe pra não interromper)
+    pop(game.rawg_id);
+  };
+
+  return (
+    <View style={{ flex: 1, paddingHorizontal: 20 }}>
+      <View style={{ marginBottom: 12 }}>
+        <Text
+          style={{
+            fontFamily: tokens.fontFamily.medium,
+            fontSize: 22,
+            color: tokens.color.text.primary,
+          }}
+        >
+          {t('discover.onboardingTitle')}
+        </Text>
+        <Text
+          style={{
+            fontFamily: tokens.fontFamily.regular,
+            fontSize: 13,
+            color: tokens.color.text.secondary,
+            marginTop: 4,
+          }}
+        >
+          {t('discover.onboardingSubtitle')}
+        </Text>
+      </View>
+
+      {/* Deck */}
+      <View style={{ flex: 1 }}>
+        {isLoading && queue.length === 0 ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator color={tokens.color.brand.primary} />
+          </View>
+        ) : queue.length === 0 ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <Text
+              style={{
+                fontFamily: tokens.fontFamily.regular,
+                fontSize: 14,
+                color: tokens.color.text.secondary,
+                textAlign: 'center',
+              }}
+            >
+              {t('discover.emptyTitle')}
+            </Text>
+          </View>
+        ) : (
+          <SwipeDeck queue={queue} onSwipe={handleSwipe} />
+        )}
+      </View>
+
+      {/* Footer */}
+      <View style={{ paddingTop: 12, paddingBottom: 8, gap: 8 }}>
+        {!canContinue && (
+          <Text
+            style={{
+              fontFamily: tokens.fontFamily.regular,
+              fontSize: 12,
+              color: tokens.color.text.tertiary,
+              textAlign: 'center',
+            }}
+          >
+            {t('discover.swipesNeeded', { count: MIN_DISCOVER_SWIPES - swipeCount })}
+          </Text>
+        )}
+        <Button
+          label={t('discover.continue')}
+          size="lg"
+          onPress={onContinue}
+          disabled={!canContinue}
+        />
+        <Button
+          label={t('discover.skip')}
+          size="lg"
+          variant="ghost"
+          onPress={onSkip}
+        />
+      </View>
+    </View>
   );
 }

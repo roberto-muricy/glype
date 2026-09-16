@@ -11,10 +11,11 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: tokens.color.bg.primary },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Home' }} />
-      <Tabs.Screen name="search" options={{ title: 'Busca' }} />
-      <Tabs.Screen name="library" options={{ title: 'Biblioteca' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Perfil' }} />
+      {/* Os labels visuais vêm do BottomTabBar via t() — title aqui só é usado em accessibility/devtools */}
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="search" />
+      <Tabs.Screen name="library" />
+      <Tabs.Screen name="profile" />
     </Tabs>
   );
 }

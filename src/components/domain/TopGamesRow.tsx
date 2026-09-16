@@ -1,4 +1,5 @@
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Button } from '@/src/components/ui';
 import { TrophyIcon } from '@/src/components/ui/icons';
@@ -103,6 +104,9 @@ export function TopGamesRow({ favorites, onGamePress }: TopGamesRowProps) {
               <Image
                 source={{ uri: fav.game.cover_url }}
                 style={{ width: COVER_W, height: COVER_H }}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={200}
                 accessibilityIgnoresInvertColors
               />
             ) : (

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Toast } from '@/src/components/ui';
 import { ChevronLeftIcon, CloseIcon, SearchTabIcon } from '@/src/components/ui/icons';
@@ -34,6 +35,7 @@ const MAX = 5;
 
 export default function TopGamesScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const userId = useAuthStore((s) => s.user?.id ?? null);
 
   const { data: favorites, isLoading: favLoading } = useFavoriteGames(userId);
@@ -68,8 +70,8 @@ export default function TopGamesScreen() {
   // Limpa o toast.
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => setToast(null), 2500);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(timer);
   }, [toast]);
 
   const results: Game[] = isSearching
@@ -125,13 +127,13 @@ export default function TopGamesScreen() {
         }
       }
       await setFavorites.mutateAsync(gameIds);
-      setToast({ variant: 'success', title: 'Top 5 salvo!' });
+      setToast({ variant: 'success', title: t('profile.topSaved') });
       setTimeout(() => router.back(), 800);
     } catch (e) {
       hapticError();
       setToast({
         variant: 'danger',
-        title: e instanceof Error ? e.message : 'Erro ao salvar',
+        title: e instanceof Error ? e.message : t('profile.errorSaving'),
       });
     } finally {
       setSaving(false);
@@ -146,11 +148,11 @@ export default function TopGamesScreen() {
           onPress={() => router.back()}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Voltar"
+          accessibilityLabel={t('common.back')}
           className="flex-row items-center gap-1"
         >
           <ChevronLeftIcon size={20} color={tokens.color.brand.primary} />
-          <Text className="text-body text-brand-primary">Voltar</Text>
+          <Text className="text-body text-brand-primary">{t('common.back')}</Text>
         </Pressable>
 
         <Pressable
@@ -166,7 +168,7 @@ export default function TopGamesScreen() {
               fontFamily: tokens.fontFamily.medium,
             }}
           >
-            {saving ? 'Salvando…' : 'Salvar'}
+            {saving ? t('common.saving') : t('common.save')}
           </Text>
         </Pressable>
       </View>
@@ -186,9 +188,9 @@ export default function TopGamesScreen() {
           <View>
             {/* Título */}
             <View className="px-5 pt-1 pb-3">
-              <Text className="text-h1 text-text-primary">Top 5 Jogos</Text>
+              <Text className="text-h1 text-text-primary">{t('profile.topGames')}</Text>
               <Text className="text-caption text-text-secondary mt-1">
-                Escolha e ordene seus 5 jogos favoritos. #1 é o seu preferido.
+                {t('profile.topGamesSubtitle')}
               </Text>
             </View>
 
@@ -200,7 +202,7 @@ export default function TopGamesScreen() {
             ) : picked.length === 0 ? (
               <View className="mx-5 mb-4 rounded-xl border border-dashed border-border p-6 items-center">
                 <Text className="text-body text-text-secondary text-center">
-                  Seu Top 5 está vazio. Busque jogos abaixo para começar.
+                  {t('profile.topEmpty')}
                 </Text>
               </View>
             ) : (
@@ -224,7 +226,7 @@ export default function TopGamesScreen() {
             {isFull ? (
               <View className="mx-5 mb-2 rounded-xl bg-bg-surface p-4 items-center">
                 <Text className="text-body text-text-secondary">
-                  Top 5 completo ✓ — remova um jogo para trocar.
+                  {t('profile.topFull')}
                 </Text>
               </View>
             ) : (
@@ -238,7 +240,7 @@ export default function TopGamesScreen() {
                     <TextInput
                       value={query}
                       onChangeText={setQuery}
-                      placeholder="Buscar jogo para adicionar…"
+                      placeholder={t('profile.searchGameToAdd')}
                       placeholderTextColor={tokens.color.text.tertiary}
                       returnKeyType="search"
                       style={{
@@ -256,7 +258,7 @@ export default function TopGamesScreen() {
                 </View>
                 <View className="px-5 pt-1 pb-2">
                   <Text className="text-section uppercase text-brand-muted">
-                    {isSearching ? 'Resultados' : 'Em alta'}
+                    {isSearching ? t('profile.results') : t('profile.trendingLower')}
                   </Text>
                 </View>
                 {resultsLoading && results.length === 0 && (
@@ -299,6 +301,7 @@ function PickedRow({
   onMoveUp: () => void;
   onMoveDown: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <View className="flex-row items-center gap-3 bg-bg-elevated rounded-xl p-2">
       {/* Rank */}
@@ -351,7 +354,7 @@ function PickedRow({
           disabled={isFirst}
           hitSlop={6}
           accessibilityRole="button"
-          accessibilityLabel="Subir"
+          accessibilityLabel={t('profile.moveUp')}
           style={{ padding: 4, opacity: isFirst ? 0.25 : 1 }}
         >
           <Text style={{ color: tokens.color.text.primary, fontSize: 16 }}>▲</Text>
@@ -361,7 +364,7 @@ function PickedRow({
           disabled={isLast}
           hitSlop={6}
           accessibilityRole="button"
-          accessibilityLabel="Descer"
+          accessibilityLabel={t('profile.moveDown')}
           style={{ padding: 4, opacity: isLast ? 0.25 : 1 }}
         >
           <Text style={{ color: tokens.color.text.primary, fontSize: 16 }}>▼</Text>
@@ -370,7 +373,7 @@ function PickedRow({
           onPress={onRemove}
           hitSlop={6}
           accessibilityRole="button"
-          accessibilityLabel="Remover"
+          accessibilityLabel={t('common.remove')}
           style={{ padding: 4 }}
         >
           <CloseIcon size={16} color={tokens.color.semantic.danger} />
@@ -391,12 +394,13 @@ function SearchResultRow({
   disabled: boolean;
   onAdd: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Pressable
       onPress={onAdd}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel={`Adicionar ${game.title}`}
+      accessibilityLabel={t('profile.addGame', { title: game.title })}
       className="flex-row items-center gap-3 px-5 py-2"
       style={{ opacity: disabled ? 0.4 : 1 }}
     >

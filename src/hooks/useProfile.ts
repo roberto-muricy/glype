@@ -7,14 +7,29 @@ import {
   getReviewDetail,
   type ProfileUpdate,
 } from '@/src/services/profile.service';
+import { getDetailedStats } from '@/src/services/stats.service';
 import { useAuthStore } from '@/src/stores/auth';
 
 export const profileKeys = {
-  stats:        (userId: string)   => ['profile', 'stats', userId]    as const,
-  public:       (userId: string)   => ['profile', 'public', userId]   as const,
-  reviews:      (userId: string)   => ['profile', 'reviews', userId]  as const,
-  reviewDetail: (reviewId: string) => ['profile', 'review', reviewId] as const,
+  stats:        (userId: string)   => ['profile', 'stats', userId]         as const,
+  detailed:     (userId: string)   => ['profile', 'detailedStats', userId] as const,
+  public:       (userId: string)   => ['profile', 'public', userId]        as const,
+  reviews:      (userId: string)   => ['profile', 'reviews', userId]       as const,
+  reviewDetail: (reviewId: string) => ['profile', 'review', reviewId]      as const,
 };
+
+// Hook pra estatísticas detalhadas (gráficos da tela de stats).
+// staleTime maior — esses dados não mudam rapidamente.
+export function useDetailedStats() {
+  const user = useAuthStore((s) => s.user);
+
+  return useQuery({
+    queryKey: profileKeys.detailed(user?.id ?? ''),
+    queryFn: () => getDetailedStats(user!.id),
+    enabled: !!user?.id,
+    staleTime: 1000 * 60 * 10,
+  });
+}
 
 export function useProfileStats() {
   const user = useAuthStore((s) => s.user);

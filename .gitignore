@@ -50,3 +50,6 @@ supabase/.branches/
 
 # Claude Code worktrees
 .claude/
+
+# Google Play service account (contém chave privada — usado por eas submit)
+play-service-account.json

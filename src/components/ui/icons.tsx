@@ -46,3 +46,5 @@ export const ChatBubbleIcon = make('chatbubble-outline');
 export const ChatBubbleFilledIcon = make('chatbubble');
 export const SendIcon = make('send');
 export const TrashIcon = make('trash-outline');
+export const EditIcon = make('create-outline');
+export const ShareIcon = make('share-outline');

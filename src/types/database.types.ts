@@ -58,6 +58,42 @@ export type Database = {
           },
         ]
       }
+      favorite_games: {
+        Row: {
+          created_at: string
+          game_id: string
+          rank: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          rank: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          rank?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorite_games_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorite_games_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       follows: {
         Row: {
           created_at: string | null
@@ -85,6 +121,39 @@ export type Database = {
           {
             foreignKeyName: "follows_following_id_fkey"
             columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_dismissals: {
+        Row: {
+          dismissed_at: string
+          game_id: string
+          user_id: string
+        }
+        Insert: {
+          dismissed_at?: string
+          game_id: string
+          user_id: string
+        }
+        Update: {
+          dismissed_at?: string
+          game_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_dismissals_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_dismissals_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -151,42 +220,6 @@ export type Database = {
         }
         Relationships: []
       }
-      favorite_games: {
-        Row: {
-          created_at: string
-          game_id: string
-          rank: number
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          game_id: string
-          rank: number
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          game_id?: string
-          rank?: number
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "favorite_games_game_id_fkey"
-            columns: ["game_id"]
-            isOneToOne: false
-            referencedRelation: "games"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "favorite_games_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       notifications: {
         Row: {
           actor_id: string
@@ -224,6 +257,13 @@ export type Database = {
             columns: ["actor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "review_comments"
             referencedColumns: ["id"]
           },
           {
@@ -277,6 +317,63 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          reason: string
+          reported_user_id: string | null
+          reporter_id: string
+          resolution_note: string | null
+          resolved_at: string | null
+          status: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason: string
+          reported_user_id?: string | null
+          reporter_id: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          status?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason?: string
+          reported_user_id?: string | null
+          reporter_id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          status?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_reported_user_id_fkey"
+            columns: ["reported_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       review_comments: {
         Row: {
@@ -355,7 +452,7 @@ export type Database = {
       }
       reviews: {
         Row: {
-          body: string
+          body: string | null
           completed: boolean | null
           created_at: string | null
           game_id: string
@@ -368,7 +465,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          body: string
+          body?: string | null
           completed?: boolean | null
           created_at?: string | null
           game_id: string
@@ -381,7 +478,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          body?: string
+          body?: string | null
           completed?: boolean | null
           created_at?: string | null
           game_id?: string
@@ -404,6 +501,39 @@ export type Database = {
           {
             foreignKeyName: "reviews_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_blocks: {
+        Row: {
+          blocked_at: string
+          blocked_id: string
+          blocker_id: string
+        }
+        Insert: {
+          blocked_at?: string
+          blocked_id: string
+          blocker_id: string
+        }
+        Update: {
+          blocked_at?: string
+          blocked_id?: string
+          blocker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_blocks_blocked_id_fkey"
+            columns: ["blocked_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_blocks_blocker_id_fkey"
+            columns: ["blocker_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

@@ -10,29 +10,31 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Button, Pill, Toast } from '@/src/components/ui';
 import { useAuth } from '@/src/hooks/useAuth';
 import { useUpdateProfile } from '@/src/hooks/useProfile';
 import { tokens } from '@/src/theme/tokens';
 import { CloseIcon } from '@/src/components/ui/icons';
 
-const GENRE_OPTIONS = [
-  { value: 'action', label: 'Ação' },
-  { value: 'role-playing-games-rpg', label: 'RPG' },
-  { value: 'adventure', label: 'Aventura' },
-  { value: 'shooter', label: 'Shooter' },
-  { value: 'sports', label: 'Esportes' },
-  { value: 'racing', label: 'Corrida' },
-  { value: 'indie', label: 'Indie' },
-  { value: 'strategy', label: 'Estratégia' },
-  { value: 'puzzle', label: 'Puzzle' },
-  { value: 'fighting', label: 'Luta' },
-  { value: 'platformer', label: 'Plataforma' },
-  { value: 'horror', label: 'Terror' },
+const GENRE_KEYS: Array<{ value: string; key: string }> = [
+  { value: 'action', key: 'action' },
+  { value: 'role-playing-games-rpg', key: 'rpg' },
+  { value: 'adventure', key: 'adventure' },
+  { value: 'shooter', key: 'shooter' },
+  { value: 'sports', key: 'sports' },
+  { value: 'racing', key: 'racing' },
+  { value: 'indie', key: 'indie' },
+  { value: 'strategy', key: 'strategy' },
+  { value: 'puzzle', key: 'puzzle' },
+  { value: 'fighting', key: 'fighting' },
+  { value: 'platformer', key: 'platformer' },
+  { value: 'horror', key: 'horror' },
 ];
 
 export default function EditProfileScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { profile } = useAuth();
   const updateProfile = useUpdateProfile();
 
@@ -46,8 +48,8 @@ export default function EditProfileScreen() {
 
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => setToast(null), 2500);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(timer);
   }, [toast]);
 
   const toggleGenre = (value: string) => {
@@ -64,12 +66,12 @@ export default function EditProfileScreen() {
         location: location.trim() || null,
         favorite_genres: selectedGenres,
       });
-      setToast({ variant: 'success', title: 'Perfil atualizado!' });
+      setToast({ variant: 'success', title: t('profile.profileUpdated') });
       setTimeout(() => router.back(), 800);
     } catch (err) {
       setToast({
         variant: 'danger',
-        title: err instanceof Error ? err.message : 'Erro ao salvar',
+        title: err instanceof Error ? err.message : t('profile.errorSaving'),
       });
     }
   };
@@ -82,12 +84,12 @@ export default function EditProfileScreen() {
       <SafeAreaView className="flex-1" edges={['top']}>
         {/* Header */}
         <View className="flex-row items-center justify-between px-5 py-3 border-b border-border-subtle">
-          <Text className="text-h2 text-text-primary">Editar perfil</Text>
+          <Text className="text-h2 text-text-primary">{t('profile.editProfile')}</Text>
           <Pressable
             onPress={() => router.back()}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Fechar"
+            accessibilityLabel={t('common.close')}
             className="rounded-full bg-bg-elevated p-2"
           >
             <CloseIcon size={18} color={tokens.color.text.primary} />
@@ -101,25 +103,25 @@ export default function EditProfileScreen() {
         >
           {/* Username (read-only) */}
           <View className="px-5 pt-5">
-            <Text className="text-section uppercase text-brand-muted mb-1">Username</Text>
+            <Text className="text-section uppercase text-brand-muted mb-1">{t('auth.username')}</Text>
             <Text className="text-body text-text-tertiary">@{profile?.username}</Text>
           </View>
 
           {/* Display name */}
           <Field
-            label="Nome de exibição"
+            label={t('auth.displayName')}
             value={displayName}
             onChangeText={setDisplayName}
-            placeholder="Como quer ser chamado?"
+            placeholder={t('profile.displayNamePlaceholder')}
             maxLength={50}
           />
 
           {/* Bio */}
           <Field
-            label="Bio"
+            label={t('profile.bio')}
             value={bio}
             onChangeText={setBio}
-            placeholder="Conte um pouco sobre você…"
+            placeholder={t('profile.bioPlaceholder')}
             multiline
             numberOfLines={3}
             maxLength={160}
@@ -127,26 +129,26 @@ export default function EditProfileScreen() {
 
           {/* Localização */}
           <Field
-            label="Localização"
+            label={t('profile.location')}
             value={location}
             onChangeText={setLocation}
-            placeholder="São Paulo, Brasil"
+            placeholder={t('profile.locationPlaceholder')}
             maxLength={60}
           />
 
           {/* Gêneros favoritos */}
           <View className="px-5 mt-5">
             <View className="flex-row items-baseline justify-between mb-3">
-              <Text className="text-section uppercase text-brand-muted">Gêneros favoritos</Text>
+              <Text className="text-section uppercase text-brand-muted">{t('profile.favoriteGenres')}</Text>
               <Text className="text-caption text-text-tertiary">
-                {selectedGenres.length} selecionado{selectedGenres.length !== 1 ? 's' : ''}
+                {selectedGenres.length} {selectedGenres.length !== 1 ? t('profile.selectedPlural') : t('profile.selected')}
               </Text>
             </View>
             <View className="flex-row flex-wrap gap-2">
-              {GENRE_OPTIONS.map((g) => (
+              {GENRE_KEYS.map((g) => (
                 <Pill
                   key={g.value}
-                  label={g.label}
+                  label={t(`search.genres.${g.key}`)}
                   variant={selectedGenres.includes(g.value) ? 'active' : 'default'}
                   onPress={() => toggleGenre(g.value)}
                 />
@@ -164,7 +166,7 @@ export default function EditProfileScreen() {
           {/* Salvar */}
           <View className="px-5 mt-6">
             <Button
-              label={updateProfile.isPending ? 'Salvando…' : 'Salvar alterações'}
+              label={updateProfile.isPending ? t('common.saving') : t('review.saveChanges')}
               size="lg"
               loading={updateProfile.isPending}
               onPress={handleSave}
