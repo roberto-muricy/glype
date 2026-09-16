@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -47,6 +47,13 @@ export function BottomTabBar({ state, navigation }: BottomTabBarProps) {
     const key = TAB_LABEL_KEY[routeName];
     return key ? t(key) : routeName;
   };
+  // Com a fonte do sistema aumentada não cabe uma palavra embaixo de cada
+  // ícone: "Busca" e "Biblioteca" quebravam no meio. Passando do limite a
+  // barra fica só de ícones, um pouco maiores, e o nome continua sendo lido
+  // por leitor de tela pelo accessibilityLabel do Pressable.
+  const { fontScale } = useWindowDimensions();
+  const showLabels = fontScale <= 1.4;
+  const iconSize = showLabels ? 22 : 26;
   const plusScale = useSharedValue(1);
   const plusStyle = useAnimatedStyle(() => ({ transform: [{ scale: plusScale.value }] }));
   // Insere um item "spacer" no meio para o botão de + review se sobrepor.
@@ -81,15 +88,19 @@ export function BottomTabBar({ state, navigation }: BottomTabBarProps) {
         accessibilityLabel={labelFor(route.name)}
         className="flex-1 items-center justify-center gap-1 py-2"
       >
-        <Icon size={22} color={color} />
-        <Text
-          className={cn(
-            'text-caption',
-            isFocused ? 'text-brand-primary font-medium' : 'text-text-secondary',
-          )}
-        >
-          {labelFor(route.name)}
-        </Text>
+        <Icon size={iconSize} color={color} />
+        {showLabels && (
+          <Text
+            numberOfLines={1}
+            maxFontSizeMultiplier={1.4}
+            className={cn(
+              'text-caption',
+              isFocused ? 'text-brand-primary font-medium' : 'text-text-secondary',
+            )}
+          >
+            {labelFor(route.name)}
+          </Text>
+        )}
       </Pressable>
     );
   };

@@ -5,6 +5,7 @@ import {
   Text,
   View,
   Pressable,
+  useWindowDimensions,
   type ViewStyle,
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -501,6 +502,11 @@ const listContentStyle: ViewStyle = {
 
 function DiscoverPromoCard({ onPress }: { onPress: () => void }) {
   const { t } = useTranslation();
+  // Ícone + texto + pílula numa linha só cabem na fonte padrão. Aumentada, a
+  // pílula empurrava o título até quebrar no meio ("Desco/brir"), então acima
+  // do limite ela desce para baixo do texto.
+  const { fontScale } = useWindowDimensions();
+  const stacked = fontScale > 1.3;
   return (
     <View className="mx-5 mt-4">
       <Pressable
@@ -517,8 +523,8 @@ function DiscoverPromoCard({ onPress }: { onPress: () => void }) {
           style={{
             backgroundColor: tokens.color.brand.primary,
             padding: 18,
-            flexDirection: 'row',
-            alignItems: 'center',
+            flexDirection: stacked ? 'column' : 'row',
+            alignItems: stacked ? 'flex-start' : 'center',
             gap: 14,
           }}
         >
@@ -534,7 +540,7 @@ function DiscoverPromoCard({ onPress }: { onPress: () => void }) {
           >
             <Ionicons name="sparkles" size={22} color="#fff" />
           </View>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: stacked ? undefined : 1, alignSelf: 'stretch' }}>
             <Text
               style={{
                 fontFamily: tokens.fontFamily.medium,
