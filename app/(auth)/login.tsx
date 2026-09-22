@@ -60,7 +60,10 @@ export default function LoginScreen() {
       // Navigation handled automatically by AuthGate / onAuthStateChange
     } catch (e: unknown) {
       if (isSignInCanceled(e)) return; // usuário fechou a janela — silencioso
-      setError(e instanceof Error ? e.message : t('auth.errorWithApple'));
+      // Mensagem do provedor nunca vai pra tela: o que vinha da Apple era
+      // "Bad ID token", em inglês e sem dizer o que fazer. O detalhe técnico
+      // fica no Sentry (GLYPE-5), com a tag provider.
+      setError(t('auth.errorWithApple'));
     } finally {
       socialInFlight.current = false;
       setAppleLoading(false);
@@ -77,7 +80,7 @@ export default function LoginScreen() {
       // Navigation handled automatically by AuthGate / onAuthStateChange
     } catch (e: unknown) {
       if (isSignInCanceled(e)) return; // usuário fechou o seletor — silencioso
-      setError(e instanceof Error ? e.message : t('auth.errorWithGoogle'));
+      setError(t('auth.errorWithGoogle'));
     } finally {
       socialInFlight.current = false;
       setGoogleLoading(false);
