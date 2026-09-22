@@ -119,7 +119,7 @@ export function useAuth() {
         track('signin_canceled', { method: 'apple' });
       } else {
         track('signin_failed', { method: 'apple' });
-        captureException(e, { provider: 'apple' });
+        captureException(e, undefined, { provider: 'apple' });
       }
       throw e;
     }
@@ -134,7 +134,7 @@ export function useAuth() {
         track('signin_canceled', { method: 'google' });
       } else {
         track('signin_failed', { method: 'google' });
-        captureException(e, { provider: 'google' });
+        captureException(e, undefined, { provider: 'google' });
       }
       throw e;
     }

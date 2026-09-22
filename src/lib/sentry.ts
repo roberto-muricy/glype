@@ -49,19 +49,32 @@ export function initSentry(): void {
   initialized = true;
 }
 
-/** Captura uma exceção manualmente. No-op se Sentry não inicializado. */
+/**
+ * Captura uma exceção manualmente. No-op se Sentry não inicializado.
+ *
+ * `context` vira "Additional Data": bom para payloads, ruim para achar o
+ * evento depois, porque não é indexado. `tags` aparecem no resumo do evento e
+ * dão para filtrar na busca — use para o punhado de valores curtos pelos quais
+ * você vai querer agrupar (provider do login, tipo de alvo, etc).
+ */
 export function captureException(
   error: unknown,
   context?: Record<string, unknown>,
+  tags?: Record<string, string>,
 ): void {
   if (!initialized) {
-    if (__DEV__) console.error('[Sentry/dev]', error, context);
+    if (__DEV__) console.error('[Sentry/dev]', error, context, tags);
     return;
   }
   Sentry.withScope((scope) => {
     if (context) {
       for (const [k, v] of Object.entries(context)) {
         scope.setExtra(k, v);
+      }
+    }
+    if (tags) {
+      for (const [k, v] of Object.entries(tags)) {
+        scope.setTag(k, v);
       }
     }
     Sentry.captureException(error);
