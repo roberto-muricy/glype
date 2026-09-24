@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSearchGames, useTrendingGames } from '@/src/hooks/useGames';
 import { useDebounce } from '@/src/hooks/useDebounce';
+import { track } from '@/src/lib/analytics';
 import { CloseIcon, SearchTabIcon } from '@/src/components/ui/icons';
 import { tokens } from '@/src/theme/tokens';
 import type { Game } from '@/src/types/models';
@@ -36,6 +37,12 @@ export default function PickGameScreen() {
   const loading = isSearching ? searchFetching : trendingLoading;
 
   const handleSelect = (game: Game) => {
+    // Segundo passo do funil de review: abriu a busca → escolheu o jogo →
+    // abriu o editor → publicou.
+    track('review_game_picked', {
+      rawg_id: game.rawg_id,
+      from_search: isSearching,
+    });
     router.replace(`/review/new?rawgId=${game.rawg_id}` as never);
   };
 

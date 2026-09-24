@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { supabase } from '@/src/lib/supabase';
+import { getSessionUser, supabase } from '@/src/lib/supabase';
 import { useAuthStore } from '@/src/stores/auth';
 import { queryClient } from '@/src/lib/queryClient';
 import {
@@ -70,6 +70,30 @@ export function useAuthBootstrap(): void {
   }, [setSession, setProfile, setLoading]);
 }
 
+/**
+ * Conta criada há menos disso = cadastro, não retorno.
+ *
+ * O primeiro login com Apple ou Google cria a conta no Supabase, mas
+ * `signup_succeeded` só era disparado no cadastro por email — então cadastro
+ * por login social não aparecia como cadastro em lugar nenhum, e a conversão
+ * de instalação para cadastro saía errada. O que separa um caso do outro é o
+ * `created_at` da conta: recém-criada, é de segundos atrás.
+ */
+const NEW_ACCOUNT_WINDOW_MS = 60_000;
+
+async function trackSocialSignIn(method: 'apple' | 'google'): Promise<void> {
+  track('signin_succeeded', { method });
+  try {
+    const signedIn = await getSessionUser();
+    const createdAt = signedIn?.created_at ? Date.parse(signedIn.created_at) : NaN;
+    if (!Number.isNaN(createdAt) && Date.now() - createdAt < NEW_ACCOUNT_WINDOW_MS) {
+      track('signup_succeeded', { method });
+    }
+  } catch {
+    // Sem o dado fica só o signin_succeeded. Não vale arriscar o login por analytics.
+  }
+}
+
 // Hook principal: estado + ações.
 export function useAuth() {
   const session = useAuthStore((s) => s.session);
@@ -112,7 +136,7 @@ export function useAuth() {
   const signInWithApple = async (): Promise<void> => {
     try {
       await signInWithAppleService();
-      track('signin_succeeded', { method: 'apple' });
+      await trackSocialSignIn('apple');
     } catch (e) {
       // Fechar a janela não é falha: sem alerta no Sentry e sem signin_failed.
       if (isSignInCanceled(e)) {
@@ -128,7 +152,7 @@ export function useAuth() {
   const signInWithGoogle = async (): Promise<void> => {
     try {
       await signInWithGoogleService();
-      track('signin_succeeded', { method: 'google' });
+      await trackSocialSignIn('google');
     } catch (e) {
       if (isSignInCanceled(e)) {
         track('signin_canceled', { method: 'google' });

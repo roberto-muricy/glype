@@ -17,6 +17,7 @@ import { Button, Toast } from '@/src/components/ui';
 import { ScoreSlider } from '@/src/components/domain';
 import { useCreateReview, useUpdateReview, useMyReview } from '@/src/hooks/useReviews';
 import { useGameDetail, useGameByRawgId } from '@/src/hooks/useGames';
+import { track } from '@/src/lib/analytics';
 import { tokens } from '@/src/theme/tokens';
 import { CloseIcon } from '@/src/components/ui/icons';
 import type { ReviewDraft } from '@/src/types/models';
@@ -104,6 +105,33 @@ export default function NewReviewScreen() {
     return () => clearTimeout(t);
   }, [toast]);
 
+  // ─── Funil de review ─────────────────────────────────────────────
+  // Só o sucesso era medido (`review_created`), então abandono no editor —
+  // o vazamento mais provável do fluxo — era invisível. O snapshot vive num
+  // ref porque a limpeza do efeito roda com o estado do primeiro render.
+  const publishedRef = useRef(false);
+  const draftRef = useRef<{ mode: 'create' | 'edit'; bodyLen: number }>({
+    mode: 'create',
+    bodyLen: 0,
+  });
+
+  useEffect(() => {
+    draftRef.current = { mode: isEditing ? 'edit' : 'create', bodyLen };
+  }, [isEditing, bodyLen]);
+
+  useEffect(() => {
+    track('review_editor_opened', { mode: reviewId ? 'edit' : 'create' });
+    return () => {
+      if (publishedRef.current) return;
+      track('review_editor_abandoned', {
+        mode: draftRef.current.mode,
+        had_body: draftRef.current.bodyLen > 0,
+      });
+    };
+    // Uma vez por abertura do editor.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSubmit = async () => {
     if (!rawgId) return;
 
@@ -127,6 +155,7 @@ export default function NewReviewScreen() {
       } else {
         await createReview.mutateAsync({ rawgId, draft });
       }
+      publishedRef.current = true; // saiu publicando, não abandonando
       setToast({ variant: 'success', title: isEditing ? t('review.reviewUpdated') : t('review.reviewPublished') });
       setTimeout(() => router.back(), 800);
     } catch (err) {

@@ -58,6 +58,39 @@ npx eas-cli env:exec production "npx sentry-expo-upload-sourcemaps dist"
 
 Precisa rodar com o `dist/` do publish, senão os debug IDs não casam.
 
+## Analytics (PostHog EU)
+
+**Telas não precisam ser instrumentadas.** O `ScreenTracker`, no layout raiz,
+reporta cada rota como `$screen` — o evento padrão do PostHog, que alimenta os
+relatórios de sessão, bounce e funil por tela. O nome é o padrão da rota
+(`game/[rawgId]`), então ID não vira tela nova. Em dev cada tela aparece no
+console como `[analytics] $screen <nome>`.
+
+Eventos de ação usam `track()`, em `snake_case`, com o id do Supabase quando
+precisar identificar alguém — nunca email nem nome.
+
+| Área | Eventos |
+|---|---|
+| Sessão | `$screen` (automático); instalação, abertura e background vêm do `captureAppLifecycleEvents` |
+| Cadastro e login | `signup_succeeded` / `signup_failed`, `signin_succeeded` / `signin_failed` / `signin_canceled`, `signout`, `account_deleted` — todos com `method` (`email`, `apple`, `google`) |
+| Onboarding | `onboarding_started`, `onboarding_step_completed` (`step`, `name`, `skipped`, `count`), `onboarding_finished` (`last_step`) |
+| Review | `review_game_picked`, `review_editor_opened` (`mode`), `review_editor_abandoned` (`mode`, `had_body`), `review_created`, `review_updated`, `review_deleted` |
+| Deck | `discover_opened` (`source`), `discover_swipe_left` / `right`, `discover_view_details`, `discover_queue_exhausted` |
+| Biblioteca e social | `game_added_to_library`, `game_removed_from_library`, `user_followed` / `user_unfollowed`, `comment_created` / `comment_deleted`, `content_reported`, `user_blocked` / `user_unblocked` |
+| Outros | `collection_opened`, `language_changed` |
+
+Dois funis montam sozinhos a partir disso:
+
+- **Cadastro:** `$screen login` → `signin_succeeded` → `onboarding_finished` → `review_created`
+- **Review:** `$screen review/pick-game` → `review_game_picked` → `review_editor_opened` → `review_created`, com `review_editor_abandoned` mostrando quem desistiu no editor
+
+O primeiro login com Apple ou Google dispara **os dois**, `signin_succeeded` e
+`signup_succeeded` — a conta recém-criada é reconhecida pelo `created_at` de
+menos de um minuto. Sem isso, cadastro por login social não contava como
+cadastro em lugar nenhum.
+
+Evento novo entra nesta tabela. É o que evita dois nomes para a mesma coisa.
+
 ## Banco de dados
 
 - `npx supabase db push --linked` roda o usuário. O classificador bloqueia esse

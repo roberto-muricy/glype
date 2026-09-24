@@ -2,7 +2,6 @@
 //
 // Acessada via Perfil → Estatísticas.
 
-import { useEffect } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -12,17 +11,12 @@ import { StatTile } from '@/src/components/domain/charts/StatTile';
 import { BarChart } from '@/src/components/domain/charts/BarChart';
 import { GenreBar } from '@/src/components/domain/charts/GenreBar';
 import { useDetailedStats } from '@/src/hooks/useProfile';
-import { trackScreen } from '@/src/lib/analytics';
 import { tokens } from '@/src/theme/tokens';
 
 export default function StatsScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { data: stats, isLoading } = useDetailedStats();
-
-  useEffect(() => {
-    trackScreen('stats');
-  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-bg-primary" edges={['top']}>

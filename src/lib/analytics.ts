@@ -101,9 +101,22 @@ export async function isFeatureEnabled(flag: string): Promise<boolean> {
   }
 }
 
-/** Hook helper: trackeia screen view. Chame em useEffect das telas-chave. */
+/**
+ * Visualização de tela.
+ *
+ * Manda o evento padrão do PostHog (`$screen`, via `client.screen`) em vez de
+ * um evento próprio: é ele que alimenta os relatórios nativos de sessão,
+ * bounce e funil por tela. Com um evento custom, nada disso funciona.
+ *
+ * Não precisa ser chamado nas telas: o `ScreenTracker` no layout raiz reporta
+ * todas a partir do roteador.
+ */
 export function trackScreen(screenName: string, props?: EventProps): void {
-  track('screen_viewed', { screen: screenName, ...(props ?? {}) });
+  // Em dev fica no console: é a única forma de ver se a tela nova está
+  // reportando, já que o client não faz flush em desenvolvimento.
+  if (__DEV__) console.log('[analytics] $screen', screenName, props ?? {});
+  if (!client) return;
+  client.screen(screenName, props as never);
 }
 
 export { client as posthogClient };

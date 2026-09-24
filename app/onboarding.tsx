@@ -57,6 +57,28 @@ export default function OnboardingScreen() {
     setError(null);
   };
 
+  // Funil do onboarding: antes só existia um evento, no fim do passo 2, então
+  // não dava para saber em qual passo as pessoas desistiam.
+  useEffect(() => {
+    track('onboarding_started');
+  }, []);
+
+  /** Passo concluído, seja avançando ou pulando. `count` é o que a pessoa fez
+   *  no passo: gêneros escolhidos, swipes dados, perfis seguidos. */
+  const trackStep = (
+    stepNumber: 1 | 2 | 3,
+    name: 'genres' | 'discover' | 'follow',
+    skipped: boolean,
+    count: number,
+  ) => {
+    track('onboarding_step_completed', { step: stepNumber, name, skipped, count });
+  };
+
+  const finish = (lastStep: 1 | 2 | 3) => {
+    track('onboarding_finished', { last_step: lastStep });
+    router.replace('/(tabs)');
+  };
+
   const handleGenresContinue = async () => {
     if (selected.length < MIN_GENRES) {
       setError(`Selecione pelo menos ${MIN_GENRES} gêneros`);
@@ -64,13 +86,12 @@ export default function OnboardingScreen() {
     }
     try {
       await updateProfile.mutateAsync({ favorite_genres: selected });
+      trackStep(1, 'genres', false, selected.length);
       setStep(2); // discover swipe deck (opcional)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao salvar');
     }
   };
-
-  const handleFinish = () => router.replace('/(tabs)');
 
   return (
     <SafeAreaView className="flex-1 bg-bg-primary" edges={['top', 'bottom']}>
@@ -97,18 +118,32 @@ export default function OnboardingScreen() {
           selected={selected}
           onToggle={toggle}
           onContinue={handleGenresContinue}
-          onSkip={handleFinish}
+          onSkip={() => {
+            trackStep(1, 'genres', true, selected.length);
+            finish(1);
+          }}
           loading={updateProfile.isPending}
           error={error}
         />
       ) : step === 2 ? (
         <StepDiscover
           genres={selected}
-          onContinue={() => setStep(3)}
-          onSkip={() => setStep(3)}
+          onContinue={(swipes) => {
+            trackStep(2, 'discover', false, swipes);
+            setStep(3);
+          }}
+          onSkip={(swipes) => {
+            trackStep(2, 'discover', true, swipes);
+            setStep(3);
+          }}
         />
       ) : (
-        <StepFollow onFinish={handleFinish} />
+        <StepFollow
+          onFinish={(followedCount, skipped) => {
+            trackStep(3, 'follow', skipped, followedCount);
+            finish(3);
+          }}
+        />
       )}
     </SafeAreaView>
   );
@@ -243,7 +278,12 @@ function StepGenres({
 
 // ─── Step 2: Seguir pessoas ───────────────────────────────────────────────────
 
-function StepFollow({ onFinish }: { onFinish: () => void }) {
+function StepFollow({
+  onFinish,
+}: {
+  /** Quantos perfis a pessoa seguiu, e se saiu pelo "Pular". */
+  onFinish: (followedCount: number, skipped: boolean) => void;
+}) {
   const { data: users, isLoading } = useSuggestedUsers();
   const [followed, setFollowed] = useState<Set<string>>(new Set());
   const follow = useFollowUser();
@@ -382,10 +422,15 @@ function StepFollow({ onFinish }: { onFinish: () => void }) {
         <Button
           label={followed.size > 0 ? `Começar — seguindo ${followed.size}` : 'Começar'}
           size="lg"
-          onPress={onFinish}
+          onPress={() => onFinish(followed.size, false)}
         />
         {followed.size === 0 && (
-          <Button label="Pular" size="lg" variant="ghost" onPress={onFinish} />
+          <Button
+            label="Pular"
+            size="lg"
+            variant="ghost"
+            onPress={() => onFinish(0, true)}
+          />
         )}
       </View>
     </ScrollView>
@@ -400,8 +445,9 @@ function StepDiscover({
   onSkip,
 }: {
   genres: string[];
-  onContinue: () => void;
-  onSkip: () => void;
+  /** Recebe quantos swipes a pessoa deu, para o funil saber o esforço no passo. */
+  onContinue: (swipes: number) => void;
+  onSkip: (swipes: number) => void;
 }) {
   const { t } = useTranslation();
   const { queue, isLoading, hasMore, prefetchMore, pop } = useDiscoverQueue(genres, 12);
@@ -507,14 +553,14 @@ function StepDiscover({
         <Button
           label={t('discover.continue')}
           size="lg"
-          onPress={onContinue}
+          onPress={() => onContinue(swipeCount)}
           disabled={!canContinue}
         />
         <Button
           label={t('discover.skip')}
           size="lg"
           variant="ghost"
-          onPress={onSkip}
+          onPress={() => onSkip(swipeCount)}
         />
       </View>
     </View>

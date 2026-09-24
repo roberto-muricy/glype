@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { Stack, useNavigationContainerRef, useRouter, useSegments } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -21,7 +21,7 @@ import { queryClient } from '@/src/lib/queryClient';
 import { tokens } from '@/src/theme/tokens';
 import { initI18n } from '@/src/i18n';
 import { initSentry } from '@/src/lib/sentry';
-import { initAnalytics } from '@/src/lib/analytics';
+import { initAnalytics, trackScreen } from '@/src/lib/analytics';
 import { ErrorBoundary } from '@/src/components/ui/ErrorBoundary';
 import '../global.css';
 
@@ -37,6 +37,37 @@ initSentry();
 
 // Analytics é assíncrono — inicia em background; eventos antes do init ficam buffered.
 initAnalytics();
+
+/**
+ * Reporta cada tela ao PostHog a partir do roteador — num lugar só, em vez de
+ * um useEffect em cada uma das 25 telas (onde a próxima tela sempre nasce sem
+ * instrumentação). O nome vem do padrão da rota, `game/[rawgId]`, então os IDs
+ * não viram telas diferentes no relatório.
+ */
+function ScreenTracker() {
+  const navigation = useNavigationContainerRef();
+  const lastScreen = useRef<string | null>(null);
+
+  useEffect(() => {
+    const report = () => {
+      // Antes do container montar, getCurrentRoute só loga erro.
+      if (!navigation.isReady()) return;
+      const name = navigation.getCurrentRoute()?.name;
+      // Trocar de aba emite vários eventos de state para a mesma tela.
+      if (!name || name === lastScreen.current) return;
+      // `__root`, `_sitemap` e afins são andaimes do expo-router, não tela.
+      if (name.startsWith('_')) return;
+      lastScreen.current = name;
+      trackScreen(name);
+    };
+
+    report();
+    // addListener antes do container montar entra numa fila do react-navigation.
+    return navigation.addListener('state', report);
+  }, [navigation]);
+
+  return null;
+}
 
 function AuthGate() {
   const router = useRouter();
@@ -138,6 +169,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <SafeAreaProvider>
             <StatusBar style="light" />
+            <ScreenTracker />
             <AuthGate />
           </SafeAreaProvider>
         </QueryClientProvider>
