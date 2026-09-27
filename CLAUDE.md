@@ -31,7 +31,7 @@ O manifesto servido aos aparelhos mostra o `extra` real. Vale conferir sempre,
 porque um update sem configuração quebra o app sem gerar erro no publish:
 
 ```bash
-curl -s -H "expo-platform: ios" -H "expo-runtime-version: 1.1.1" \
+curl -s -H "expo-platform: ios" -H "expo-runtime-version: 1.1.2" \
   -H "expo-channel-name: production" -H "expo-protocol-version: 1" \
   -H "accept: multipart/mixed" \
   "https://u.expo.dev/76ed59a4-4e45-4b2a-b1ab-eb531696ff95" \
@@ -41,7 +41,7 @@ curl -s -H "expo-platform: ios" -H "expo-runtime-version: 1.1.1" \
 ### Desfazer
 
 ```bash
-npx eas-cli update:roll-back-to-embedded --channel production --runtime-version 1.1.1 --message "..."
+npx eas-cli update:roll-back-to-embedded --channel production --runtime-version 1.1.2 --message "..."
 ```
 
 O `--runtime-version` é obrigatório em modo não interativo. O rollback devolve

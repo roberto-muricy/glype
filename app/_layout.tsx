@@ -21,7 +21,7 @@ import { queryClient } from '@/src/lib/queryClient';
 import { tokens } from '@/src/theme/tokens';
 import { initI18n } from '@/src/i18n';
 import { initSentry } from '@/src/lib/sentry';
-import { initAnalytics, trackScreen } from '@/src/lib/analytics';
+import { initAnalytics, track, trackScreen } from '@/src/lib/analytics';
 import { ErrorBoundary } from '@/src/components/ui/ErrorBoundary';
 import '../global.css';
 
@@ -44,6 +44,48 @@ initAnalytics();
  * instrumentação). O nome vem do padrão da rota, `game/[rawgId]`, então os IDs
  * não viram telas diferentes no relatório.
  */
+/**
+ * Manda uma vez por abertura o estado do mecanismo de update.
+ *
+ * Em setembro descobrimos que os updates OTA não chegavam: de 27 pessoas
+ * ativas depois de publicar, 2 rodavam o código novo. Só os eventos dizem se
+ * o app chega a perguntar por update e o que o servidor responde — do lado de
+ * cá tudo parecia certo. Falha nada disso derruba a abertura do app.
+ */
+function UpdatesReporter() {
+  useEffect(() => {
+    if (__DEV__) return; // em dev o expo-updates não roda
+
+    const report = async () => {
+      try {
+        const Updates = await import('expo-updates');
+        track('updates_status', {
+          update_id: Updates.updateId ?? null,
+          is_embedded: Updates.isEmbeddedLaunch,
+          channel: Updates.channel ?? null,
+          runtime_version: Updates.runtimeVersion ?? null,
+          created_at: Updates.createdAt?.toISOString() ?? null,
+          check_automatically: String(Updates.checkAutomatically),
+        });
+
+        const check = await Updates.checkForUpdateAsync();
+        track('updates_check', {
+          is_available: check.isAvailable,
+          reason: 'reason' in check ? String(check.reason) : null,
+        });
+      } catch (e) {
+        track('updates_check_failed', {
+          message: e instanceof Error ? e.message : String(e),
+        });
+      }
+    };
+
+    report();
+  }, []);
+
+  return null;
+}
+
 function ScreenTracker() {
   const navigation = useNavigationContainerRef();
   const lastScreen = useRef<string | null>(null);
@@ -170,6 +212,7 @@ export default function RootLayout() {
           <SafeAreaProvider>
             <StatusBar style="light" />
             <ScreenTracker />
+            <UpdatesReporter />
             <AuthGate />
           </SafeAreaProvider>
         </QueryClientProvider>
