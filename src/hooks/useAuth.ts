@@ -158,7 +158,9 @@ export function useAuth() {
         track('signin_canceled', { method: 'google' });
       } else {
         track('signin_failed', { method: 'google' });
-        captureException(e, undefined, { provider: 'google' });
+        // `diag` vem do serviço quando o Google volta sem token de identidade.
+        const diag = (e as { diag?: Record<string, unknown> }).diag;
+        captureException(e, diag, { provider: 'google' });
       }
       throw e;
     }

@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import type { Session, User } from '@supabase/supabase-js';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { getSessionUser, supabase } from '@/src/lib/supabase';
@@ -95,7 +96,23 @@ export async function signInWithGoogle(): Promise<void> {
   // SDK v16: o token vem em result.data.idToken
   const idToken = result.data?.idToken;
   if (!idToken) {
-    throw new Error('Google não retornou um token de identidade.');
+    // GLYPE-4: acontece em produção no iOS, em vários aparelhos, e a mensagem
+    // sozinha não diz nada — o erro é nosso, não do SDK. O diagnóstico separa
+    // "o SDK não devolveu nada" de "devolveu a conta mas sem token", que têm
+    // causas diferentes. Nada aqui identifica a pessoa.
+    const diag = {
+      platform: Platform.OS,
+      result_type: result.type,
+      has_data: result.data != null,
+      has_user: result.data?.user != null,
+      has_server_auth_code: result.data?.serverAuthCode != null,
+      scopes: result.data?.scopes?.length ?? 0,
+      configured_web_client: !!process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      configured_ios_client: !!process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    };
+    throw Object.assign(new Error('Google não retornou um token de identidade.'), {
+      diag,
+    });
   }
 
   // Troca o token do Google por uma sessão Supabase
