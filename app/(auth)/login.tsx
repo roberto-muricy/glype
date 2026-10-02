@@ -16,7 +16,11 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/src/hooks/useAuth';
 import { Button, GlypeLogo, Input, Toast } from '@/src/components/ui';
 import { tokens } from '@/src/theme/tokens';
-import { isSignInCanceled } from '@/src/utils/authErrors';
+import {
+  isEmailNotConfirmed,
+  isInvalidCredentials,
+  isSignInCanceled,
+} from '@/src/utils/authErrors';
 
 export default function LoginScreen() {
   const { signIn, signInWithApple, signInWithGoogle } = useAuth();
@@ -44,7 +48,15 @@ export default function LoginScreen() {
     try {
       await signIn({ email: email.trim(), password });
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('auth.wrongCredentials'));
+      // Mensagem do Supabase vem em inglês e não distingue senha errada de
+      // conta sem senha (criada por login social) — que é o caso mais comum.
+      setError(
+        isInvalidCredentials(e)
+          ? t('auth.wrongCredentials')
+          : isEmailNotConfirmed(e)
+            ? t('auth.emailNotConfirmed')
+            : t('auth.errorSigningIn'),
+      );
     } finally {
       setSubmitting(false);
     }

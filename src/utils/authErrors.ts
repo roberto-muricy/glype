@@ -23,6 +23,43 @@ export function googleSignInCanceledError(): Error & { code: string } {
   });
 }
 
+function errorField(e: unknown, field: 'code' | 'message'): string {
+  if (typeof e !== 'object' || e === null || !(field in e)) return '';
+  return String((e as Record<string, unknown>)[field]);
+}
+
+/**
+ * Credenciais recusadas no login por email.
+ *
+ * O Supabase devolve o mesmo erro em dois casos bem diferentes: senha errada,
+ * e conta que existe mas foi criada com Apple ou Google — e portanto não tem
+ * senha nenhuma. Nos dados de produção, 7 pessoas bateram nisso 19 vezes sem
+ * nunca conseguir entrar, uma delas tentando 8 vezes seguidas. Por isso a
+ * mensagem na tela cita os botões sociais em vez de só dizer "senha incorreta".
+ */
+export function isInvalidCredentials(e: unknown): boolean {
+  return (
+    errorField(e, 'code') === 'invalid_credentials' ||
+    /invalid login credentials/i.test(errorField(e, 'message'))
+  );
+}
+
+/** Email já cadastrado — o outro lado do mesmo beco sem saída. */
+export function isUserAlreadyRegistered(e: unknown): boolean {
+  return (
+    errorField(e, 'code') === 'user_already_exists' ||
+    /already registered|already been registered/i.test(errorField(e, 'message'))
+  );
+}
+
+/** Conta criada mas email ainda não confirmado. */
+export function isEmailNotConfirmed(e: unknown): boolean {
+  return (
+    errorField(e, 'code') === 'email_not_confirmed' ||
+    /email not confirmed/i.test(errorField(e, 'message'))
+  );
+}
+
 export function isSignInCanceled(e: unknown): boolean {
   return (
     typeof e === 'object' &&

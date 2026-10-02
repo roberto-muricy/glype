@@ -11,6 +11,7 @@ import { Link } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/src/hooks/useAuth';
+import { isUserAlreadyRegistered } from '@/src/utils/authErrors';
 import { Button, Input, Toast } from '@/src/components/ui';
 import { tokens } from '@/src/theme/tokens';
 
@@ -49,7 +50,15 @@ export default function SignupScreen() {
       await signUp({ email: email.trim(), password, username: username.trim() });
       setSuccess(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('auth.errorSigningUp'));
+      // Email já cadastrado costuma ser conta criada com Apple ou Google:
+      // a pessoa tenta criar de novo em vez de entrar pelo botão social.
+      setError(
+        isUserAlreadyRegistered(e)
+          ? t('auth.emailAlreadyUsed')
+          : e instanceof Error
+            ? e.message
+            : t('auth.errorSigningUp'),
+      );
     } finally {
       setSubmitting(false);
     }
