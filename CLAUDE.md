@@ -25,6 +25,15 @@ As chaves de cliente (URL do Supabase, chave publishable, IDs do OAuth) são
 públicas por natureza e já estão versionadas. A `SUPABASE_SERVICE_ROLE_KEY`
 nunca vai para o EAS nem para o app.
 
+### Ao subir a versão do app, publique um update novo
+
+O `runtimeVersion` segue a `version` do `app.config.ts`. Subir de 1.1.1 para
+1.1.2 **órfã todos os updates já publicados**: eles continuam servidos para
+quem está na 1.1.1, e quem atualizou pela loja passa a receber
+`noUpdateAvailableOnServer` — corretamente, porque não existe update para o
+runtime novo. Isso parece OTA quebrado e não é. Depois que a versão nova chega
+na loja, publique um update para ela.
+
 ### Conferir o que foi publicado
 
 O manifesto servido aos aparelhos mostra o `extra` real. Vale conferir sempre,
