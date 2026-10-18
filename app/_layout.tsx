@@ -23,6 +23,7 @@ import { initI18n } from '@/src/i18n';
 import { initSentry } from '@/src/lib/sentry';
 import { initAnalytics, track, trackScreen } from '@/src/lib/analytics';
 import { ErrorBoundary } from '@/src/components/ui/ErrorBoundary';
+import { decidirRota } from '@/src/utils/authRoute';
 import '../global.css';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -119,27 +120,18 @@ function AuthGate() {
   const isLoading = useAuthStore((s) => s.isLoading);
 
   useEffect(() => {
+    // `isLoading` cobre tanto a leitura da sessão guardada quanto a busca do
+    // perfil logo após o login: sem isso a decisão era tomada com o perfil
+    // ainda nulo e todo mundo pulava o onboarding.
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
-    const inOnboarding = segments[0] === 'onboarding';
+    const destino = decidirRota({
+      temSessao: session != null,
+      generosFavoritos: profile ? (profile.favorite_genres ?? []) : null,
+      segmento: segments[0],
+    });
 
-    if (!session && !inAuthGroup) {
-      router.replace('/(auth)/login');
-      return;
-    }
-
-    if (session && inAuthGroup) {
-      // Após login/signup: onboarding se sem gêneros, tabs se já configurado
-      const needsOnboarding = profile && (profile.favorite_genres?.length ?? 0) === 0;
-      router.replace(needsOnboarding ? '/onboarding' : '/(tabs)');
-      return;
-    }
-
-    if (session && !inOnboarding && !inAuthGroup && segments[0] !== '(tabs)') {
-      // Garante que rotas desconhecidas com sessão vão para tabs
-      return;
-    }
+    if (destino) router.replace(destino as never);
   }, [isLoading, session, profile, segments, router]);
 
   if (isLoading) {

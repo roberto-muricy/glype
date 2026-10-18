@@ -28,14 +28,32 @@ export function useAuthBootstrap(): void {
   useEffect(() => {
     let active = true;
 
-    const fetchProfile = async (userId: string): Promise<void> => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-      if (!active) return;
-      setProfile((data as Profile | null) ?? null);
+    /**
+     * Busca o perfil, com tentativas.
+     *
+     * No primeiro login social a linha em `profiles` é criada por trigger no
+     * mesmo instante em que a sessão nasce, então a primeira leitura pode vir
+     * vazia. Antes isso virava "perfil nulo" e a pessoa era mandada para as
+     * abas sem passar pelo onboarding.
+     */
+    const fetchProfile = async (userId: string, tentativas = 3): Promise<void> => {
+      for (let i = 0; i < tentativas; i++) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+        if (!active) return;
+        if (data) {
+          setProfile(data as Profile);
+          return;
+        }
+        if (i < tentativas - 1) {
+          await new Promise((r) => setTimeout(r, 400));
+          if (!active) return;
+        }
+      }
+      setProfile(null);
     };
 
     const init = async (): Promise<void> => {
@@ -53,10 +71,23 @@ export function useAuthBootstrap(): void {
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session?.user) {
-        fetchProfile(session.user.id);
         // Identify user em analytics + Sentry (sem PII — só o id do Supabase)
         identify(session.user.id);
         setSentryUser(session.user.id);
+
+        const perfilAtual = useAuthStore.getState().profile;
+        const perfilDesconhecido = perfilAtual?.id !== session.user.id;
+        if (perfilDesconhecido) {
+          // Segura a navegação até saber se falta onboarding. Renovação de
+          // token e outros eventos com o mesmo perfil não passam por aqui, e
+          // portanto não piscam a tela de carregando.
+          setLoading(true);
+          fetchProfile(session.user.id).finally(() => {
+            if (active) setLoading(false);
+          });
+        } else {
+          fetchProfile(session.user.id);
+        }
       } else {
         setProfile(null);
         setSentryUser(null);
