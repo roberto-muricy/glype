@@ -33,7 +33,7 @@
 <div class="wrap">
   <a class="back" href="./index.html">← Voltar</a>
   <h1>Política de Privacidade</h1>
-  <p class="meta">Última atualização: 19 de maio de 2026</p>
+  <p class="meta">Última atualização: 31 de outubro de 2026</p>
 
   <p>Esta Política de Privacidade descreve como o aplicativo <strong>Glype</strong> ("nós", "nosso") coleta, utiliza e protege suas informações pessoais quando você usa nosso aplicativo móvel. Ao usar o Glype, você concorda com os termos descritos aqui.</p>
 
@@ -42,7 +42,7 @@
   <h3>1.1. Informações de conta</h3>
   <p>Quando você cria uma conta, coletamos:</p>
   <ul>
-    <li><strong>Endereço de e-mail</strong> — usado para autenticação e comunicação essencial.</li>
+    <li><strong>Endereço de e-mail</strong> — usado para autenticação, comunicação essencial e, ocasionalmente, convites para pesquisas sobre o app (veja a seção 2).</li>
     <li><strong>Senha</strong> — armazenada de forma criptografada (hash) pelo nosso provedor de autenticação.</li>
     <li><strong>Nome de usuário</strong> — visível publicamente em seu perfil.</li>
   </ul>
@@ -64,10 +64,18 @@
     <li><strong>Curtidas</strong> e <strong>relações de seguir/seguidor</strong>.</li>
   </ul>
 
-  <h3>1.4. Informações que NÃO coletamos</h3>
+  <h3>1.4. Dados de uso e diagnóstico</h3>
+  <p>Para entender como o app é usado e corrigir erros, coletamos automaticamente:</p>
+  <ul>
+    <li><strong>Uso do app</strong> — telas visitadas, ações como publicar uma review, seguir alguém ou adicionar um jogo à biblioteca, e quando o app é aberto ou fechado. Também registramos o modelo do aparelho, o sistema operacional, a versão do app e uma localização aproximada (país e cidade) estimada a partir do endereço IP. Coletado pelo PostHog.</li>
+    <li><strong>Erros e desempenho</strong> — relatórios de erro e travamento e medições de desempenho, com o modelo do aparelho, o sistema operacional e a versão do app. Coletado pelo Sentry.</li>
+  </ul>
+  <p>Esses dados são ligados à sua conta apenas por um identificador interno. Nunca enviamos seu e-mail ou nome a esses serviços.</p>
+
+  <h3>1.5. Informações que NÃO coletamos</h3>
   <ul>
     <li>Não coletamos sua localização GPS.</li>
-    <li>Não usamos serviços de analytics de terceiros (Google Analytics, Mixpanel, Firebase Analytics, etc.).</li>
+    <li>Não usamos dados de uso para publicidade nem os compartilhamos com redes de anúncios.</li>
     <li>Não rastreamos seu comportamento entre apps ou sites.</li>
     <li>Não exibimos anúncios.</li>
     <li>Não vendemos suas informações a terceiros.</li>
@@ -79,7 +87,9 @@
     <li>Para exibir seu perfil público e conteúdo a outros usuários, conforme as configurações de visibilidade.</li>
     <li>Para personalizar recomendações de jogos com base em seus gêneros favoritos.</li>
     <li>Para enviar notificações no app (curtidas, comentários, novos seguidores).</li>
+    <li>Para entender como o app é usado e corrigir erros, a partir dos dados de uso e diagnóstico.</li>
     <li>Para responder a solicitações de suporte que você enviar.</li>
+    <li>Para convidar você, ocasionalmente, a responder pesquisas ou participar de entrevistas sobre o app, por e-mail ou dentro do app. Participar é opcional, e você pode pedir para não receber mais esses convites a qualquer momento respondendo ao próprio convite ou escrevendo para o contato da seção 9. Fazemos isso com base no nosso legítimo interesse em melhorar o app.</li>
   </ul>
 
   <h2>3. Compartilhamento com terceiros</h2>
@@ -88,8 +98,11 @@
     <li><strong>Supabase</strong> (banco de dados e autenticação) — armazena de forma segura sua conta, perfil, reviews, biblioteca, comentários e relações sociais. <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Política do Supabase</a>.</li>
     <li><strong>Apple Sign-In</strong> — apenas se você escolher entrar via Apple ID. <a href="https://www.apple.com/legal/privacy/" target="_blank" rel="noopener">Política da Apple</a>.</li>
     <li><strong>Google Sign-In</strong> — apenas se você escolher entrar via conta Google. <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Política do Google</a>.</li>
+    <li><strong>PostHog</strong> (analytics, servidores na União Europeia) — recebe os dados de uso descritos na seção 1.4. <a href="https://posthog.com/privacy" target="_blank" rel="noopener">Política do PostHog</a>.</li>
+    <li><strong>Sentry</strong> (monitoramento de erros, servidores nos Estados Unidos) — recebe os relatórios de erro e desempenho descritos na seção 1.4. <a href="https://sentry.io/privacy/" target="_blank" rel="noopener">Política do Sentry</a>.</li>
     <li><strong>RAWG e IGDB</strong> — usamos suas APIs para buscar informações públicas de jogos (capa, descrição, notas). Nenhum dado pessoal seu é enviado a eles.</li>
   </ul>
+  <p>Alguns desses serviços processam dados fora do Brasil, incluindo na União Europeia e nos Estados Unidos.</p>
 
   <h2>4. Armazenamento e segurança</h2>
   <p>Seus dados são armazenados em servidores do Supabase. Adotamos as seguintes práticas:</p>
@@ -104,10 +117,12 @@
   <ul>
     <li><strong>Acessar</strong> os dados que temos sobre você.</li>
     <li><strong>Corrigir</strong> informações imprecisas em seu perfil.</li>
-    <li><strong>Excluir sua conta</strong> e todos os dados associados — envie um e-mail para o suporte (abaixo) que faremos isso em até 7 dias úteis.</li>
+    <li><strong>Excluir sua conta</strong> e todos os dados associados — pelo próprio app, na aba Perfil, no fim da tela, em "Excluir conta" (a exclusão é imediata), ou por e-mail para o suporte (abaixo), que faremos em até 7 dias úteis.</li>
     <li><strong>Exportar</strong> uma cópia dos seus dados.</li>
     <li><strong>Retirar consentimento</strong> a qualquer momento.</li>
+    <li><strong>Deixar de receber</strong> convites para pesquisas.</li>
   </ul>
+  <p>Depois que a conta é excluída, os dados de uso e diagnóstico já coletados ficam ligados apenas a um identificador interno que não corresponde a mais nenhuma conta, sem e-mail ou nome.</p>
   <p>Esses direitos estão garantidos pela LGPD (Brasil) e GDPR (União Europeia).</p>
 
   <h2>6. Conteúdo público</h2>

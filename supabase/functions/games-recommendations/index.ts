@@ -2,6 +2,7 @@ import { handlePreflight, jsonResponse, errorResponse } from '../_shared/cors.ts
 import { getGamesByGenre } from '../_shared/rawg.ts';
 import { normalizeRawg } from '../_shared/normalize.ts';
 import { withCache, makeCacheKey, CACHE_TTL } from '../_shared/cache.ts';
+import { fallbackByGenres } from '../_shared/fallback.ts';
 
 // Recomendações baseadas em gêneros favoritos do usuário (profile.favorite_genres).
 // Recebe uma lista de genre slugs (RAWG) e retorna jogos bem avaliados por gênero.
@@ -30,16 +31,21 @@ Deno.serve(async (req: Request) => {
     const cacheKey = makeCacheKey(['recommendations', ...selectedGenres, String(pageSize)]);
 
     const results = await withCache(cacheKey, CACHE_TTL.recommendations, async () => {
-      const fetches = selectedGenres.map((genre) =>
-        getGamesByGenre(genre, perGenre).catch(() => ({ results: [] })),
+      const settled = await Promise.allSettled(
+        selectedGenres.map((genre) => getGamesByGenre(genre, perGenre)),
       );
 
-      const responses = await Promise.all(fetches);
+      // Um gênero falhando ainda rende uma lista; todos falhando é a RAWG fora
+      // do ar. Antes isso virava [] e ficava 24h no cache.
+      const failed = settled.find((s) => s.status === 'rejected');
+      if (failed && settled.every((s) => s.status === 'rejected')) {
+        throw (failed as PromiseRejectedResult).reason;
+      }
 
       // Intercala resultados por gênero e deduplica por rawg_id
       const seen = new Set<number>();
       const interleaved = [];
-      const lists = responses.map((r) => r.results);
+      const lists = settled.map((s) => (s.status === 'fulfilled' ? s.value.results : []));
       const maxLen = Math.max(...lists.map((l) => l.length));
 
       for (let i = 0; i < maxLen; i++) {
@@ -57,6 +63,14 @@ Deno.serve(async (req: Request) => {
 
     return jsonResponse({ results, count: results.length, genres: selectedGenres });
   } catch (err) {
+    try {
+      const results = await fallbackByGenres(selectedGenres, pageSize);
+      if (results.length > 0) {
+        return jsonResponse({ results, count: results.length, genres: selectedGenres, fallback: true });
+      }
+    } catch (fallbackErr) {
+      console.error('[games-recommendations] reserva falhou:', fallbackErr);
+    }
     const message = err instanceof Error ? err.message : 'Erro interno';
     return errorResponse(message);
   }

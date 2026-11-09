@@ -100,6 +100,28 @@ cadastro em lugar nenhum.
 
 Evento novo entra nesta tabela. É o que evita dois nomes para a mesma coisa.
 
+## Edge Functions
+
+Deploy **sempre** com `--no-verify-jwt`:
+
+```bash
+npx supabase functions deploy <nome> --no-verify-jwt --project-ref faryowbibtszfnwawecs
+```
+
+O app fala com as funções usando a chave `sb_publishable_…`, que não é um JWT.
+Sem a flag o gateway passa a exigir JWT e recusa o app. Quem precisa de usuário
+(`games-discover`, `delete-account`) valida o token dentro da função.
+
+### Quando a RAWG cai
+
+Em novembro de 2026 a RAWG ficou mais de uma semana sem responder. As funções de
+catálogo agora seguem esta ordem: cópia do cache dentro do TTL → cópia vencida
+(o `cache_meta` nunca é limpo) → tabela `games` como catálogo de reserva
+(`_shared/fallback.ts`). Depois de uma falha de serviço (timeout, rede, 5xx, 429),
+a RAWG é pulada por 2 minutos (`upstream:rawg:down` no `cache_meta`), para não
+esperar 10s a cada chamada. Lista vazia nunca é gravada no cache. Respostas da
+reserva levam `fallback: true`.
+
 ## Banco de dados
 
 - `npx supabase db push --linked` roda o usuário. O classificador bloqueia esse
