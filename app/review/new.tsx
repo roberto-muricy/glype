@@ -15,7 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Button, Toast } from '@/src/components/ui';
 import { ScoreSlider } from '@/src/components/domain';
-import { useCreateReview, useUpdateReview, useMyReview } from '@/src/hooks/useReviews';
+import { useCreateReview, useUpdateReview, useDeleteReview, useMyReview } from '@/src/hooks/useReviews';
 import { useGameDetail, useGameByRawgId } from '@/src/hooks/useGames';
 import { track } from '@/src/lib/analytics';
 import { tokens } from '@/src/theme/tokens';
@@ -60,7 +60,10 @@ export default function NewReviewScreen() {
   const isEditing = !!effectiveReviewId;
 
   // ─── form state ──────────────────────────────────────────────────
-  const [score, setScore] = useState(initialScore ? parseFloat(initialScore) : 8.0);
+  // Review nova começa sem nota: "Publicar" só ativa depois que a pessoa escolhe.
+  const [score, setScore] = useState<number | null>(
+    initialScore ? parseFloat(initialScore) : null,
+  );
   const [body, setBody] = useState(initialBody ?? '');
   const [playtime, setPlaytime] = useState(initialPlaytime ?? '');
   const [completed, setCompleted] = useState(initialCompleted === 'true');
@@ -95,8 +98,9 @@ export default function NewReviewScreen() {
 
   const createReview = useCreateReview();
   const updateReview = useUpdateReview();
+  const deleteReview = useDeleteReview();
 
-  const isSubmitting = createReview.isPending || updateReview.isPending;
+  const isSubmitting = createReview.isPending || updateReview.isPending || deleteReview.isPending;
 
   // Limpa toast após 3s
   useEffect(() => {
@@ -110,14 +114,15 @@ export default function NewReviewScreen() {
   // o vazamento mais provável do fluxo — era invisível. O snapshot vive num
   // ref porque a limpeza do efeito roda com o estado do primeiro render.
   const publishedRef = useRef(false);
-  const draftRef = useRef<{ mode: 'create' | 'edit'; bodyLen: number }>({
+  const draftRef = useRef<{ mode: 'create' | 'edit'; bodyLen: number; hadScore: boolean }>({
     mode: 'create',
     bodyLen: 0,
+    hadScore: false,
   });
 
   useEffect(() => {
-    draftRef.current = { mode: isEditing ? 'edit' : 'create', bodyLen };
-  }, [isEditing, bodyLen]);
+    draftRef.current = { mode: isEditing ? 'edit' : 'create', bodyLen, hadScore: score != null };
+  }, [isEditing, bodyLen, score]);
 
   useEffect(() => {
     track('review_editor_opened', { mode: reviewId ? 'edit' : 'create' });
@@ -126,6 +131,7 @@ export default function NewReviewScreen() {
       track('review_editor_abandoned', {
         mode: draftRef.current.mode,
         had_body: draftRef.current.bodyLen > 0,
+        had_score: draftRef.current.hadScore,
       });
     };
     // Uma vez por abertura do editor.
@@ -133,7 +139,7 @@ export default function NewReviewScreen() {
   }, []);
 
   const handleSubmit = async () => {
-    if (!rawgId) return;
+    if (!rawgId || score == null) return;
 
     const draft: ReviewDraft = {
       score,
@@ -173,7 +179,25 @@ export default function NewReviewScreen() {
         {
           text: t('common.delete'),
           style: 'destructive',
-          onPress: () => router.back(),
+          // Antes só fechava a tela: a pessoa confirmava "não pode ser desfeita"
+          // e a review continuava publicada.
+          onPress: async () => {
+            if (!effectiveReviewId) return;
+            try {
+              await deleteReview.mutateAsync({
+                reviewId: effectiveReviewId,
+                gameId: localGame?.id,
+              });
+              publishedRef.current = true; // saiu excluindo, não abandonando
+              setToast({ variant: 'success', title: t('review.deleted') });
+              setTimeout(() => router.back(), 800);
+            } catch (err) {
+              setToast({
+                variant: 'danger',
+                title: err instanceof Error ? err.message : t('review.errorDeleting'),
+              });
+            }
+          },
         },
       ],
     );
@@ -307,9 +331,17 @@ export default function NewReviewScreen() {
           {/* ─── Ações ─── */}
           <View className="px-5 mt-6 gap-3">
             <Button
-              label={isSubmitting ? t('common.saving') : isEditing ? t('review.saveChanges') : t('review.publishReview')}
+              label={
+                isSubmitting
+                  ? t('common.saving')
+                  : score == null
+                    ? t('review.pickScoreToPublish')
+                    : isEditing
+                      ? t('review.saveChanges')
+                      : t('review.publishReview')
+              }
               size="lg"
-              disabled={isSubmitting}
+              disabled={isSubmitting || score == null}
               loading={isSubmitting}
               onPress={handleSubmit}
             />

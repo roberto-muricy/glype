@@ -376,6 +376,18 @@
     "writeReview": "Write a review"
   },
   "review": {
+    "scoreUnset": "Choose your score",
+    "scoreHint": "Drag to set your score",
+    "pickScoreToPublish": "Choose a score to publish",
+    "scoreLabels": {
+      "none": "no score",
+      "weak": "weak",
+      "average": "average",
+      "good": "good",
+      "veryGood": "very good",
+      "excellent": "excellent",
+      "masterpiece": "masterpiece"
+    },
     "writeReview": "Write a review",
     "yourScore": "Your score",
     "yourReview": "Your review",
