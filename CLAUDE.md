@@ -83,7 +83,7 @@ precisar identificar alguém — nunca email nem nome.
 | Sessão | `$screen` (automático); instalação, abertura e background vêm do `captureAppLifecycleEvents` |
 | Cadastro e login | `signup_succeeded` / `signup_failed`, `signin_succeeded` / `signin_failed` / `signin_canceled`, `signout`, `account_deleted` — todos com `method` (`email`, `apple`, `google`) |
 | Onboarding | `onboarding_started`, `onboarding_step_completed` (`step`, `name`, `skipped`, `count`), `onboarding_finished` (`last_step`) |
-| Review | `review_game_picked`, `review_editor_opened` (`mode`), `review_editor_abandoned` (`mode`, `had_body`), `review_created`, `review_updated`, `review_deleted` |
+| Review | `review_game_picked`, `review_editor_opened` (`mode`), `review_editor_abandoned` (`mode`, `had_body`, `had_score`), `review_created`, `review_updated`, `review_deleted` |
 | Deck | `discover_opened` (`source`), `discover_swipe_left` / `right`, `discover_view_details`, `discover_queue_exhausted` |
 | Biblioteca e social | `game_added_to_library`, `game_removed_from_library`, `user_followed` / `user_unfollowed`, `comment_created` / `comment_deleted`, `content_reported`, `user_blocked` / `user_unblocked` |
 | Outros | `collection_opened`, `language_changed` |

@@ -376,6 +376,18 @@
     "writeReview": "Escribir reseña"
   },
   "review": {
+    "scoreUnset": "Elige tu nota",
+    "scoreHint": "Desliza para poner la nota",
+    "pickScoreToPublish": "Elige una nota para publicar",
+    "scoreLabels": {
+      "none": "sin nota",
+      "weak": "flojo",
+      "average": "normal",
+      "good": "bueno",
+      "veryGood": "muy bueno",
+      "excellent": "excelente",
+      "masterpiece": "obra maestra"
+    },
     "writeReview": "Escribir reseña",
     "yourScore": "Tu nota",
     "yourReview": "Tu reseña",
