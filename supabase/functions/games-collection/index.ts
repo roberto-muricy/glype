@@ -41,7 +41,17 @@ async function fetchCollection(
   for (const [k, v] of Object.entries(params)) {
     url.searchParams.set(k, v);
   }
-  const res = await fetch(url.toString());
+  // Mesmo teto do rawgFetch: sem ele, uma RAWG fora do ar segurava a função
+  // até o gateway cortar, e a cópia do cache nunca chegava a ser usada.
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), { signal: AbortSignal.timeout(10_000) });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'TimeoutError') {
+      throw new Error('RAWG não respondeu em 10s');
+    }
+    throw err;
+  }
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`RAWG ${res.status}: ${text.slice(0, 200)}`);

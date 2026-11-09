@@ -2,6 +2,7 @@ import { handlePreflight, jsonResponse, errorResponse } from '../_shared/cors.ts
 import { getTrendingGames } from '../_shared/rawg.ts';
 import { normalizeRawg } from '../_shared/normalize.ts';
 import { withCache, makeCacheKey, CACHE_TTL } from '../_shared/cache.ts';
+import { fallbackTop } from '../_shared/fallback.ts';
 
 Deno.serve(async (req: Request) => {
   const preflight = handlePreflight(req);
@@ -21,6 +22,13 @@ Deno.serve(async (req: Request) => {
 
     return jsonResponse({ results, count: results.length });
   } catch (err) {
+    // Sem RAWG e sem cópia: os mais bem avaliados do catálogo de reserva.
+    try {
+      const results = await fallbackTop(pageSize);
+      if (results.length > 0) return jsonResponse({ results, count: results.length, fallback: true });
+    } catch (fallbackErr) {
+      console.error('[games-trending] reserva falhou:', fallbackErr);
+    }
     const message = err instanceof Error ? err.message : 'Erro interno';
     return errorResponse(message);
   }

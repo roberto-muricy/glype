@@ -23,11 +23,15 @@ import { getGamesByGenre } from '../_shared/rawg.ts';
 import { normalizeRawg } from '../_shared/normalize.ts';
 import {
   getServiceClient,
-  getCache,
+  getCacheEntry,
   setCache,
+  isUpstreamDown,
+  isOutageError,
+  markUpstreamDown,
   makeCacheKey,
   CACHE_TTL,
 } from '../_shared/cache.ts';
+import { fallbackByGenres } from '../_shared/fallback.ts';
 
 // O Edge Runtime do Supabase mantém vivo o que for passado ao waitUntil depois
 // que a resposta sai. Fora dele (ex.: testes locais) o identificador não existe.
@@ -165,34 +169,50 @@ Deno.serve(async (req: Request) => {
   try {
     // 3. Cache e exclusões em paralelo — são independentes e ambos rápidos.
     const key = poolKey(selectedGenres);
-    const [cachedPool, excludedRawgIds] = await Promise.all([
-      getCache<NormalizedGame[]>(key),
+    const [poolEntry, excludedRawgIds] = await Promise.all([
+      getCacheEntry<NormalizedGame[]>(key),
       getExcludedRawgIds(userId),
     ]);
+    // Pool vazio não serve nem como cópia de reserva.
+    const cachedPool = poolEntry && poolEntry.payload?.length > 0 ? poolEntry : null;
 
     const start = page * pageSize;
     const end = start + pageSize;
     let pool: NormalizedGame[];
     let poolIsPartial = false;
 
-    if (cachedPool) {
-      pool = cachedPool;
+    // Sem RAWG: o pool vencido, ou, sem ele, o catálogo de reserva. Antes o
+    // deck mostrava "você viu todos os jogos" a quem nunca tinha visto nenhum.
+    const reservePool = async (): Promise<NormalizedGame[]> =>
+      cachedPool?.payload ??
+        (await fallbackByGenres(selectedGenres, POOL_PER_GENRE * selectedGenres.length));
+
+    if (cachedPool?.fresh) {
+      pool = cachedPool.payload;
+    } else if (await isUpstreamDown()) {
+      pool = await reservePool();
     } else {
       // 4. Miss: busca só o que esta página precisa, já descontando as exclusões.
       const perGenre = Math.min(
         POOL_PER_GENRE,
         Math.ceil((end + excludedRawgIds.size) / selectedGenres.length),
       );
-      pool = buildPool(await fetchGenreLists(selectedGenres, perGenre));
+      try {
+        pool = buildPool(await fetchGenreLists(selectedGenres, perGenre));
 
-      if (perGenre < POOL_PER_GENRE) {
-        poolIsPartial = true;
-        fillPoolInBackground(key, selectedGenres);
-      } else {
-        // Já veio no tamanho cheio: só grava, sem refazer a busca.
-        runInBackground(
-          setCache(key, pool, CACHE_TTL.discover).catch((e) => logError(`gravação do pool ${key}`, e)),
-        );
+        if (perGenre < POOL_PER_GENRE) {
+          poolIsPartial = true;
+          fillPoolInBackground(key, selectedGenres);
+        } else {
+          // Já veio no tamanho cheio: só grava, sem refazer a busca.
+          runInBackground(
+            setCache(key, pool, CACHE_TTL.discover).catch((e) => logError(`gravação do pool ${key}`, e)),
+          );
+        }
+      } catch (e) {
+        logError('RAWG indisponível, usando reserva', e);
+        if (isOutageError(e)) await markUpstreamDown();
+        pool = await reservePool();
       }
     }
 

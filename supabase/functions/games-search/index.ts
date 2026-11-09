@@ -3,6 +3,7 @@ import { searchGames } from '../_shared/rawg.ts';
 import { searchGameByName } from '../_shared/igdb.ts';
 import { normalizeRawg, normalizeIgdb, mergeRawgIgdb } from '../_shared/normalize.ts';
 import { withCache, makeCacheKey, CACHE_TTL } from '../_shared/cache.ts';
+import { fallbackSearch } from '../_shared/fallback.ts';
 
 Deno.serve(async (req: Request) => {
   const preflight = handlePreflight(req);
@@ -47,6 +48,14 @@ Deno.serve(async (req: Request) => {
 
     return jsonResponse({ results, count: results.length });
   } catch (err) {
+    // Sem RAWG e sem cópia desta busca: procura pelo título no catálogo de
+    // reserva. Lista vazia aqui é resposta legítima ("nada encontrado").
+    try {
+      const results = await fallbackSearch(query, pageSize);
+      return jsonResponse({ results, count: results.length, fallback: true });
+    } catch (fallbackErr) {
+      console.error('[games-search] reserva falhou:', fallbackErr);
+    }
     const message = err instanceof Error ? err.message : 'Erro interno';
     return errorResponse(message);
   }

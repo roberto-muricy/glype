@@ -3,6 +3,7 @@ import { getGameDetail } from '../_shared/rawg.ts';
 import { searchGameByName } from '../_shared/igdb.ts';
 import { normalizeRawg, normalizeIgdb, mergeRawgIgdb } from '../_shared/normalize.ts';
 import { withCache, makeCacheKey, CACHE_TTL } from '../_shared/cache.ts';
+import { fallbackDetail } from '../_shared/fallback.ts';
 
 Deno.serve(async (req: Request) => {
   const preflight = handlePreflight(req);
@@ -43,6 +44,13 @@ Deno.serve(async (req: Request) => {
 
     return jsonResponse(game);
   } catch (err) {
+    // Sem RAWG e sem cópia: o jogo como está na tabela games, se estiver.
+    try {
+      const game = await fallbackDetail(rawgId);
+      if (game) return jsonResponse(game);
+    } catch (fallbackErr) {
+      console.error('[games-detail] reserva falhou:', fallbackErr);
+    }
     const message = err instanceof Error ? err.message : 'Erro interno';
     return errorResponse(message);
   }
