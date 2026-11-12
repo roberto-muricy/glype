@@ -27,12 +27,13 @@ export const COLLECTIONS: CollectionDef[] = [
   {
     id: 'monthly-releases',
     title: 'Lançamentos do mês',
-    subtitle: 'Novidades de maio 2026',
+    // {{month}} é preenchido com o mês corrente em useCollectionLabels.
+    subtitle: 'Novidades de {{month}}',
     icon: 'calendar-outline',
     color: '#0066FF',
     colorDark: '#0033AA',
+    // As datas são calculadas no servidor (games-collection), mês a mês.
     rawgParams: {
-      dates: '2026-05-01,2026-05-31',
       ordering: '-rating',
     },
   },

@@ -20,6 +20,7 @@ import { useAuthStore } from '@/src/stores/auth';
 import { tokens } from '@/src/theme/tokens';
 import { ChevronLeftIcon, EditIcon, EllipsisIcon, HeartIcon, HeartOutlineIcon, LocationIcon, PersonCircleIcon, TrashIcon } from '@/src/components/ui/icons';
 import type { ReviewWithGame } from '@/src/services/profile.service';
+import { genreLabel } from '@/src/utils/genres';
 
 export default function PublicProfileScreen() {
   const router = useRouter();
@@ -675,22 +676,3 @@ function BackButton({ onPress }: { onPress: () => void }) {
   );
 }
 
-// Maps a genre slug (as stored in DB) to a localized label.
-function genreLabel(slug: string, t: (k: string) => string): string {
-  const map: Record<string, string> = {
-    action: 'action',
-    'role-playing-games-rpg': 'rpg',
-    adventure: 'adventure',
-    shooter: 'shooter',
-    sports: 'sports',
-    racing: 'racing',
-    indie: 'indie',
-    strategy: 'strategy',
-    puzzle: 'puzzle',
-    fighting: 'fighting',
-    platformer: 'platformer',
-    horror: 'horror',
-  };
-  const key = map[slug];
-  return key ? t(`search.genres.${key}`) : slug;
-}

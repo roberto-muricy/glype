@@ -20,6 +20,7 @@ import { useCollection } from '@/src/hooks/useGames';
 import { getCollectionById } from '@/src/config/collections';
 import { tokens } from '@/src/theme/tokens';
 import type { Game } from '@/src/types/models';
+import { gameScore10 } from '@/src/utils/score';
 
 // Skeleton placeholder
 const SKELETON_ITEMS: Game[] = Array.from({ length: 8 }, (_, i) => ({
@@ -82,9 +83,7 @@ export default function CollectionScreen() {
           genre={item.genres?.[0]}
           coverUrl={item.cover_url}
           score={
-            item.metacritic_score != null
-              ? item.metacritic_score / 10
-              : (item.rawg_rating ?? undefined)
+            gameScore10(item) ?? undefined
           }
           size="sm"
           className="w-full"

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Stack, useNavigationContainerRef, useRouter, useSegments } from 'expo-router';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -23,7 +23,9 @@ import { initI18n } from '@/src/i18n';
 import { initSentry } from '@/src/lib/sentry';
 import { initAnalytics, track, trackScreen } from '@/src/lib/analytics';
 import { ErrorBoundary } from '@/src/components/ui/ErrorBoundary';
-import { decidirRota } from '@/src/utils/authRoute';
+import { aguardandoRota, decidirRota } from '@/src/utils/authRoute';
+import { wasOnboardingSeen } from '@/src/lib/onboardingSeen';
+import { applyUpdateAtStartup } from '@/src/lib/startupUpdate';
 import '../global.css';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -90,9 +92,14 @@ function UpdatesReporter() {
 function ScreenTracker() {
   const navigation = useNavigationContainerRef();
   const lastScreen = useRef<string | null>(null);
+  // A home montava por um instante antes do redirecionamento para o login, e
+  // o PostHog contava isso como visita: quem travou no login parecia alguém
+  // que viu a home e foi embora.
+  const routePending = useAuthStore((s) => s.routePending);
 
   useEffect(() => {
     const report = () => {
+      if (routePending) return;
       // Antes do container montar, getCurrentRoute só loga erro.
       if (!navigation.isReady()) return;
       const name = navigation.getCurrentRoute()?.name;
@@ -107,7 +114,7 @@ function ScreenTracker() {
     report();
     // addListener antes do container montar entra numa fila do react-navigation.
     return navigation.addListener('state', report);
-  }, [navigation]);
+  }, [navigation, routePending]);
 
   return null;
 }
@@ -118,21 +125,43 @@ function AuthGate() {
   const session = useAuthStore((s) => s.session);
   const profile = useAuthStore((s) => s.profile);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const onboardingSeen = useAuthStore((s) => s.onboardingSeen);
+  const setOnboardingSeen = useAuthStore((s) => s.setOnboardingSeen);
+  const setRoutePending = useAuthStore((s) => s.setRoutePending);
+  const userId = session?.user.id ?? null;
 
   useEffect(() => {
-    // `isLoading` cobre tanto a leitura da sessão guardada quanto a busca do
-    // perfil logo após o login: sem isso a decisão era tomada com o perfil
-    // ainda nulo e todo mundo pulava o onboarding.
-    if (isLoading) return;
-
-    const destino = decidirRota({
-      temSessao: session != null,
-      generosFavoritos: profile ? (profile.favorite_genres ?? []) : null,
-      segmento: segments[0],
+    if (!userId) return;
+    let alive = true;
+    setOnboardingSeen(null);
+    wasOnboardingSeen(userId).then((seen) => {
+      if (alive) setOnboardingSeen(seen);
     });
+    return () => {
+      alive = false;
+    };
+  }, [userId, setOnboardingSeen]);
 
+  // `isLoading` cobre tanto a leitura da sessão guardada quanto a busca do
+  // perfil logo após o login: sem isso a decisão era tomada com o perfil
+  // ainda nulo e todo mundo pulava o onboarding.
+  const estado = {
+    temSessao: session != null,
+    generosFavoritos: profile ? (profile.favorite_genres ?? []) : null,
+    onboardingVisto: onboardingSeen,
+    segmento: segments[0],
+  };
+  const destino = isLoading ? null : decidirRota(estado);
+  const pending = isLoading || destino != null || aguardandoRota(estado);
+
+  useEffect(() => {
+    setRoutePending(pending);
+  }, [pending, setRoutePending]);
+
+  const segmento = segments[0];
+  useEffect(() => {
     if (destino) router.replace(destino as never);
-  }, [isLoading, session, profile, segments, router]);
+  }, [destino, segmento, router]);
 
   if (isLoading) {
     return (
@@ -146,6 +175,7 @@ function AuthGate() {
   }
 
   return (
+    <>
     <Stack
       screenOptions={{
         headerShown: false,
@@ -171,6 +201,17 @@ function AuthGate() {
       <Stack.Screen name="discover" options={{ presentation: 'modal' }} />
       <Stack.Screen name="notifications" options={{ presentation: 'card' }} />
     </Stack>
+    {/* Cobre a tela de baixo enquanto o redirecionamento não acontece: a home
+        piscava antes do login e antes do onboarding. */}
+    {pending && (
+      <View
+        style={[StyleSheet.absoluteFill, { backgroundColor: tokens.color.bg.primary }]}
+        className="items-center justify-center"
+      >
+        <ActivityIndicator color={tokens.color.brand.primary} />
+      </View>
+    )}
+    </>
   );
 }
 
@@ -182,6 +223,12 @@ export default function RootLayout() {
     i18nReady.then(() => setI18nLoaded(true));
   }, []);
 
+  // No código embutido da loja, aplica o update antes da primeira tela.
+  const [updateChecked, setUpdateChecked] = useState(false);
+  useEffect(() => {
+    applyUpdateAtStartup().finally(() => setUpdateChecked(true));
+  }, []);
+
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_500Medium,
     SpaceGrotesk_600SemiBold,
@@ -189,13 +236,12 @@ export default function RootLayout() {
     JetBrainsMono_500Medium,
   });
 
+  const ready = fontsLoaded && i18nLoaded && updateChecked;
   useEffect(() => {
-    if (fontsLoaded && i18nLoaded) {
-      SplashScreen.hideAsync().catch(() => undefined);
-    }
-  }, [fontsLoaded, i18nLoaded]);
+    if (ready) SplashScreen.hideAsync().catch(() => undefined);
+  }, [ready]);
 
-  if (!fontsLoaded || !i18nLoaded) return null;
+  if (!ready) return null;
 
   return (
     <ErrorBoundary>

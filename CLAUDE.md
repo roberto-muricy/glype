@@ -34,6 +34,14 @@ quem está na 1.1.1, e quem atualizou pela loja passa a receber
 runtime novo. Isso parece OTA quebrado e não é. Depois que a versão nova chega
 na loja, publique um update para ela.
 
+### Update aplicado no splash
+
+A partir do binário 1.1.3, quando a abertura roda o código embutido no binário (instalação
+nova, ou logo depois de atualizar pela loja), o app procura o update durante o
+splash e recarrega antes da primeira tela (`src/lib/startupUpdate.ts`, tetos de
+3s para checar e 8s para baixar). Antes disso a primeira sessão de quem
+instalava sempre rodava o código da loja.
+
 ### Conferir o que foi publicado
 
 O manifesto servido aos aparelhos mostra o `extra` real. Vale conferir sempre,
@@ -81,6 +89,7 @@ precisar identificar alguém — nunca email nem nome.
 | Área | Eventos |
 |---|---|
 | Sessão | `$screen` (automático); instalação, abertura e background vêm do `captureAppLifecycleEvents` |
+| Updates | `updates_status`, `updates_check` / `updates_check_failed` (a cada abertura); `updates_startup` (`result`: `applied`, `none`, `check_timeout`, `fetch_timeout`, `not_new`, `error`; `ms`), só quando a abertura roda o código embutido da loja |
 | Cadastro e login | `signup_succeeded` / `signup_failed`, `signin_succeeded` / `signin_failed` / `signin_canceled`, `signout`, `account_deleted` — todos com `method` (`email`, `apple`, `google`) |
 | Onboarding | `onboarding_started`, `onboarding_step_completed` (`step`, `name`, `skipped`, `count`), `onboarding_finished` (`last_step`) |
 | Review | `review_game_picked`, `review_editor_opened` (`mode`), `review_editor_abandoned` (`mode`, `had_body`, `had_score`), `review_created`, `review_updated`, `review_deleted` |

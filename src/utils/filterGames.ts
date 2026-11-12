@@ -1,5 +1,6 @@
 import type { Game } from '@/src/types/models';
 import type { SearchFiltersState } from '@/src/components/domain/SearchFilters';
+import { gameScore10 } from '@/src/utils/score';
 
 const PS5_STRINGS = ['PlayStation 5', 'PS5'];
 const PS4_STRINGS = ['PlayStation 4', 'PS4'];
@@ -13,9 +14,7 @@ function matchesPlatform(game: Game, platform: SearchFiltersState['platform']): 
 }
 
 function gameScore(game: Game): number {
-  if (game.metacritic_score != null) return game.metacritic_score / 10;
-  if (game.rawg_rating != null) return game.rawg_rating * 2; // 0-5 → 0-10
-  return 0;
+  return gameScore10(game) ?? 0;
 }
 
 function matchesScore(game: Game, score: SearchFiltersState['score']): boolean {
