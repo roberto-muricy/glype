@@ -3,6 +3,7 @@ import { getGamesByGenre } from '../_shared/rawg.ts';
 import { normalizeRawg } from '../_shared/normalize.ts';
 import { withCache, makeCacheKey, CACHE_TTL } from '../_shared/cache.ts';
 import { fallbackByGenres } from '../_shared/fallback.ts';
+import { igdbByGenres } from '../_shared/catalog.ts';
 
 // Recomendações baseadas em gêneros favoritos do usuário (profile.favorite_genres).
 // Recebe uma lista de genre slugs (RAWG) e retorna jogos bem avaliados por gênero.
@@ -63,6 +64,14 @@ Deno.serve(async (req: Request) => {
 
     return jsonResponse({ results, count: results.length, genres: selectedGenres });
   } catch (err) {
+    try {
+      const results = (await igdbByGenres(selectedGenres, perGenre)).slice(0, pageSize);
+      if (results.length > 0) {
+        return jsonResponse({ results, count: results.length, genres: selectedGenres, fallback: true, source: 'igdb' });
+      }
+    } catch (igdbErr) {
+      console.error('[games-recommendations] IGDB falhou:', igdbErr instanceof Error ? igdbErr.message : igdbErr);
+    }
     try {
       const results = await fallbackByGenres(selectedGenres, pageSize);
       if (results.length > 0) {

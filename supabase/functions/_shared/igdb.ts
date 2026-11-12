@@ -25,8 +25,13 @@ export interface IgdbGame {
   first_release_date?: number; // unix seconds
   rating?: number; // 0-100 (IGDB user rating)
   aggregated_rating?: number; // 0-100 (critics)
-  cover?: { id: number; url: string; image_id?: string };
-  genres?: { id: number; name: string }[];
+  total_rating?: number; // 0-100 (média de usuários e críticos)
+  total_rating_count?: number;
+  cover?: { id: number; url?: string; image_id?: string };
+  artworks?: { id: number; image_id?: string }[];
+  screenshots?: { id: number; image_id?: string }[];
+  genres?: { id: number; name: string; slug?: string }[];
+  themes?: { id: number; name: string; slug?: string }[];
   platforms?: { id: number; name: string; abbreviation?: string }[];
   involved_companies?: {
     company: { id: number; name: string };
@@ -71,7 +76,7 @@ async function getAccessToken(): Promise<string> {
   return cachedToken.token;
 }
 
-async function igdbFetch<T>(endpoint: string, body: string): Promise<T> {
+export async function igdbFetch<T>(endpoint: string, body: string): Promise<T> {
   const token = await getAccessToken();
   const { clientId } = getCredentials();
   const res = await fetch(`${IGDB_URL}/${endpoint}`, {
@@ -120,7 +125,7 @@ export function getGameById(igdbId: number): Promise<IgdbGame[]> {
 // t_thumb, t_cover_small, t_cover_big, t_720p, t_1080p, t_original.
 export function igdbCoverUrl(
   imageId: string | undefined,
-  size: 't_cover_big' | 't_720p' | 't_1080p' = 't_cover_big',
+  size: 't_cover_big' | 't_screenshot_big' | 't_720p' | 't_1080p' = 't_cover_big',
 ): string | null {
   if (!imageId) return null;
   return `https://images.igdb.com/igdb/image/upload/${size}/${imageId}.jpg`;

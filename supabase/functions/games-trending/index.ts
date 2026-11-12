@@ -3,6 +3,7 @@ import { getTrendingGames } from '../_shared/rawg.ts';
 import { normalizeRawg } from '../_shared/normalize.ts';
 import { withCache, makeCacheKey, CACHE_TTL } from '../_shared/cache.ts';
 import { fallbackTop } from '../_shared/fallback.ts';
+import { igdbTop } from '../_shared/catalog.ts';
 
 Deno.serve(async (req: Request) => {
   const preflight = handlePreflight(req);
@@ -22,7 +23,15 @@ Deno.serve(async (req: Request) => {
 
     return jsonResponse({ results, count: results.length });
   } catch (err) {
-    // Sem RAWG e sem cópia: os mais bem avaliados do catálogo de reserva.
+    // Sem RAWG e sem cópia: os mais avaliados da IGDB, depois os da tabela games.
+    try {
+      const results = await igdbTop(pageSize);
+      if (results.length > 0) {
+        return jsonResponse({ results, count: results.length, fallback: true, source: 'igdb' });
+      }
+    } catch (igdbErr) {
+      console.error('[games-trending] IGDB falhou:', igdbErr instanceof Error ? igdbErr.message : igdbErr);
+    }
     try {
       const results = await fallbackTop(pageSize);
       if (results.length > 0) return jsonResponse({ results, count: results.length, fallback: true });

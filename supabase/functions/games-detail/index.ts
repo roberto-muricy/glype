@@ -4,6 +4,7 @@ import { searchGameByName } from '../_shared/igdb.ts';
 import { normalizeRawg, normalizeIgdb, mergeRawgIgdb } from '../_shared/normalize.ts';
 import { withCache, makeCacheKey, CACHE_TTL } from '../_shared/cache.ts';
 import { fallbackDetail } from '../_shared/fallback.ts';
+import { igdbDetail, igdbIdFromKey } from '../_shared/catalog.ts';
 
 Deno.serve(async (req: Request) => {
   const preflight = handlePreflight(req);
@@ -19,6 +20,18 @@ Deno.serve(async (req: Request) => {
   const rawgId = parseInt(rawgIdParam, 10);
   if (isNaN(rawgId)) {
     return errorResponse('"rawg_id" deve ser um número inteiro', 400);
+  }
+
+  // Jogo que só existe na IGDB (chave negativa): a RAWG não o conhece.
+  const igdbId = igdbIdFromKey(rawgId);
+  if (igdbId != null) {
+    try {
+      const game = await igdbDetail(igdbId);
+      return game ? jsonResponse(game) : errorResponse('Jogo não encontrado', 404);
+    } catch (err) {
+      console.error('[games-detail] IGDB falhou:', err instanceof Error ? err.message : err);
+      return errorResponse('Catálogo indisponível', 503);
+    }
   }
 
   try {

@@ -97,7 +97,7 @@ export class UpstreamDownError extends Error {
  * Depois de uma falha, quanto tempo pular a RAWG direto. Sem isso, toda
  * chamada esperava os 10s do timeout antes de cair na cópia do cache.
  */
-const UPSTREAM_DOWN_SECONDS = 120;
+const UPSTREAM_DOWN_SECONDS = 600;
 const UPSTREAM_DOWN_KEY = 'upstream:rawg:down';
 /** Atalho no próprio isolate, para não ir ao banco a cada miss. */
 let upstreamDownUntil = 0;
