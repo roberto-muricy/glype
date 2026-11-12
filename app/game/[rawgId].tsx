@@ -396,7 +396,9 @@ function buildScoreSources(game: Game) {
     sources.push({ source: 'Metacritic', score: game.metacritic_score, max: 100 });
   }
   if (game.rawg_rating != null && game.rawg_rating > 0) {
-    sources.push({ source: 'RAWG', score: game.rawg_rating, max: 5 });
+    // rawg_id negativo = jogo que veio da IGDB; a nota é dela, na escala da RAWG.
+    const source = game.rawg_id != null && game.rawg_id < 0 ? 'IGDB' : 'RAWG';
+    sources.push({ source, score: game.rawg_rating, max: 5 });
   }
   return sources;
 }

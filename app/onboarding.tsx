@@ -17,6 +17,9 @@ import { useSuggestedUsers, useFollowUser, useUnfollowUser } from '@/src/hooks/u
 import { useDiscoverQueue, useDismissGame, useWishlistFromDiscover } from '@/src/hooks/useDiscover';
 import { track } from '@/src/lib/analytics';
 import { tokens } from '@/src/theme/tokens';
+import { genreLabel } from '@/src/utils/genres';
+import { useAuthStore } from '@/src/stores/auth';
+import { markOnboardingSeen } from '@/src/lib/onboardingSeen';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -46,6 +49,8 @@ const TOTAL_STEPS = 3;
 export default function OnboardingScreen() {
   const router = useRouter();
   const updateProfile = useUpdateProfile();
+  const userId = useAuthStore((st) => st.session?.user.id ?? null);
+  const setOnboardingSeen = useAuthStore((st) => st.setOnboardingSeen);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +81,9 @@ export default function OnboardingScreen() {
 
   const finish = (lastStep: 1 | 2 | 3) => {
     track('onboarding_finished', { last_step: lastStep });
+    // Sem a marca, quem pulou sem escolher gênero voltaria aqui a cada abertura.
+    if (userId) markOnboardingSeen(userId);
+    setOnboardingSeen(true);
     router.replace('/(tabs)');
   };
 
@@ -284,6 +292,7 @@ function StepFollow({
   /** Quantos perfis a pessoa seguiu, e se saiu pelo "Pular". */
   onFinish: (followedCount: number, skipped: boolean) => void;
 }) {
+  const { t } = useTranslation();
   const { data: users, isLoading } = useSuggestedUsers();
   const [followed, setFollowed] = useState<Set<string>>(new Set());
   const follow = useFollowUser();
@@ -384,7 +393,7 @@ function StepFollow({
                       }}
                       numberOfLines={1}
                     >
-                      {user.favorite_genres.slice(0, 3).join(' · ')}
+                      {user.favorite_genres.slice(0, 3).map((g) => genreLabel(g, t)).join(' · ')}
                     </Text>
                   )}
                 </View>

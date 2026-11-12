@@ -24,6 +24,7 @@ import { applyFilters } from '@/src/utils/filterGames';
 import { DEFAULT_FILTERS, hasActiveFilters } from '@/src/components/domain/SearchFilters';
 import type { Game } from '@/src/types/models';
 import type { SearchFiltersState } from '@/src/components/domain/SearchFilters';
+import { gameScore10 } from '@/src/utils/score';
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -98,9 +99,7 @@ export default function SearchScreen() {
           genre={item.genres[0]}
           coverUrl={item.cover_url}
           score={
-            item.metacritic_score != null
-              ? item.metacritic_score / 10
-              : (item.rawg_rating ?? undefined)
+            gameScore10(item) ?? undefined
           }
           size="sm"
           className="w-full"

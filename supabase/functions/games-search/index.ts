@@ -4,6 +4,7 @@ import { searchGameByName } from '../_shared/igdb.ts';
 import { normalizeRawg, normalizeIgdb, mergeRawgIgdb } from '../_shared/normalize.ts';
 import { withCache, makeCacheKey, CACHE_TTL } from '../_shared/cache.ts';
 import { fallbackSearch } from '../_shared/fallback.ts';
+import { igdbSearch } from '../_shared/catalog.ts';
 
 Deno.serve(async (req: Request) => {
   const preflight = handlePreflight(req);
@@ -48,8 +49,15 @@ Deno.serve(async (req: Request) => {
 
     return jsonResponse({ results, count: results.length });
   } catch (err) {
-    // Sem RAWG e sem cópia desta busca: procura pelo título no catálogo de
-    // reserva. Lista vazia aqui é resposta legítima ("nada encontrado").
+    // Sem RAWG e sem cópia desta busca: a IGDB, que tem o catálogo inteiro.
+    // Lista vazia aqui é resposta legítima ("nada encontrado").
+    try {
+      const results = await igdbSearch(query, pageSize);
+      return jsonResponse({ results, count: results.length, fallback: true, source: 'igdb' });
+    } catch (igdbErr) {
+      console.error('[games-search] IGDB falhou:', igdbErr instanceof Error ? igdbErr.message : igdbErr);
+    }
+    // Sem IGDB também: procura pelo título na tabela games.
     try {
       const results = await fallbackSearch(query, pageSize);
       return jsonResponse({ results, count: results.length, fallback: true });

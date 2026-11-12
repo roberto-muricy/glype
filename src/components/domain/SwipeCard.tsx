@@ -24,6 +24,7 @@ import { ScoreBadge } from './ScoreBadge';
 import { tokens } from '@/src/theme/tokens';
 import { hapticLight, hapticMedium } from '@/src/utils/haptics';
 import type { Game } from '@/src/types/models';
+import { gameScore10 } from '@/src/utils/score';
 
 export type SwipeDirection = 'left' | 'right' | 'up';
 
@@ -190,7 +191,7 @@ function SwipeCardComponent({
 
   const heroUrl = game.background_url ?? game.cover_url;
   const releaseYear = game.release_date ? new Date(game.release_date).getFullYear() : null;
-  const score = game.metacritic_score != null ? game.metacritic_score / 10 : game.rawg_rating ?? null;
+  const score = gameScore10(game) ?? null;
 
   return (
     <GestureDetector gesture={pan}>

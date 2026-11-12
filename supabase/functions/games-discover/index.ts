@@ -32,6 +32,7 @@ import {
   CACHE_TTL,
 } from '../_shared/cache.ts';
 import { fallbackByGenres } from '../_shared/fallback.ts';
+import { igdbByGenres } from '../_shared/catalog.ts';
 
 // O Edge Runtime do Supabase mantém vivo o que for passado ao waitUntil depois
 // que a resposta sai. Fora dele (ex.: testes locais) o identificador não existe.
@@ -181,11 +182,18 @@ Deno.serve(async (req: Request) => {
     let pool: NormalizedGame[];
     let poolIsPartial = false;
 
-    // Sem RAWG: o pool vencido, ou, sem ele, o catálogo de reserva. Antes o
-    // deck mostrava "você viu todos os jogos" a quem nunca tinha visto nenhum.
-    const reservePool = async (): Promise<NormalizedGame[]> =>
-      cachedPool?.payload ??
-        (await fallbackByGenres(selectedGenres, POOL_PER_GENRE * selectedGenres.length));
+    // Sem RAWG: o pool vencido; sem ele, a IGDB; sem ela, a tabela games.
+    // Antes o deck mostrava "você viu todos os jogos" a quem nunca tinha visto nenhum.
+    const reservePool = async (): Promise<NormalizedGame[]> => {
+      if (cachedPool) return cachedPool.payload;
+      try {
+        const pool = await igdbByGenres(selectedGenres, POOL_PER_GENRE);
+        if (pool.length > 0) return pool;
+      } catch (e) {
+        logError('IGDB indisponível, usando a tabela games', e);
+      }
+      return fallbackByGenres(selectedGenres, POOL_PER_GENRE * selectedGenres.length);
+    };
 
     if (cachedPool?.fresh) {
       pool = cachedPool.payload;

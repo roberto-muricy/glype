@@ -276,7 +276,7 @@
   "collections": {
     "monthly-releases": {
       "title": "Lançamentos do mês",
-      "subtitle": "Novidades de maio 2026"
+      "subtitle": "Novidades de {{month}}"
     },
     "editors-pick": {
       "title": "Escolha do editor",

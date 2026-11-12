@@ -10,6 +10,7 @@ import { getGameDetail } from '../_shared/rawg.ts';
 import { searchGameByName } from '../_shared/igdb.ts';
 import { normalizeRawg, normalizeIgdb, mergeRawgIgdb } from '../_shared/normalize.ts';
 import { getServiceClient } from '../_shared/cache.ts';
+import { igdbDetail, igdbIdFromKey } from '../_shared/catalog.ts';
 
 /** A IGDB é opcional aqui: não pode segurar o cadastro do jogo. */
 const IGDB_BUDGET_MS = 4_000;
@@ -52,7 +53,46 @@ Deno.serve(async (req: Request) => {
     return jsonResponse(existing);
   }
 
-  // 2. Busca na RAWG + IGDB e normaliza
+  // 2. Jogo que só existe na IGDB (chave negativa). O igdbDetail já procura o
+  // jogo no banco pelo igdb_id, slug e título: se ele existir com o rawg_id de
+  // verdade, é essa linha que volta, e a review fica com o jogo certo.
+  const igdbId = igdbIdFromKey(rawgId);
+  if (igdbId != null) {
+    let game;
+    try {
+      game = await igdbDetail(igdbId);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao buscar jogo';
+      return errorResponse(msg, 502);
+    }
+    if (!game) return errorResponse('Jogo não encontrado', 404);
+
+    const { data: linked } = await supabase
+      .from('games')
+      .select('*')
+      .eq('rawg_id', game.rawg_id)
+      .maybeSingle();
+    if (linked) return jsonResponse(linked);
+
+    const { data: inserted, error } = await supabase
+      .from('games')
+      .upsert(game, { onConflict: 'rawg_id' })
+      .select()
+      .single();
+    if (!error) return jsonResponse(inserted, 201);
+
+    // Conflito de slug ou igdb_id: o jogo já está no banco por outro caminho.
+    const { data: same } = await supabase
+      .from('games')
+      .select('*')
+      .or(`igdb_id.eq.${igdbId}${game.slug ? `,slug.eq.${game.slug}` : ''}`)
+      .limit(1)
+      .maybeSingle();
+    if (same) return jsonResponse(same);
+    return errorResponse(`Erro ao salvar jogo: ${error.message}`, 500);
+  }
+
+  // 3. Busca na RAWG + IGDB e normaliza
   let gameData;
   try {
     const rawgGame = await getGameDetail(rawgId);
@@ -72,7 +112,7 @@ Deno.serve(async (req: Request) => {
     return errorResponse(msg, 502);
   }
 
-  // 3. Upsert (service_role bypassa RLS)
+  // 4. Upsert (service_role bypassa RLS)
   const { data: upserted, error } = await supabase
     .from('games')
     .upsert(gameData, { onConflict: 'rawg_id' })

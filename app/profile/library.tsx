@@ -20,6 +20,7 @@ import { useGameStatusLabel } from '@/src/i18n/useGameStatusLabel';
 import { type GameStatus, type UserGame } from '@/src/types/models';
 import { tokens } from '@/src/theme/tokens';
 import { LibraryIcon } from '@/src/components/ui/icons';
+import { gameScore10 } from '@/src/utils/score';
 
 type FilterValue = 'all' | GameStatus;
 const STATUS_LIST: GameStatus[] = ['playing', 'played', 'wishlist', 'dropped'];
@@ -49,9 +50,7 @@ export default function PublicLibraryScreen() {
         genre={item.game.genres?.[0]}
         coverUrl={item.game.cover_url}
         score={
-          item.game.metacritic_score != null
-            ? item.game.metacritic_score / 10
-            : (item.game.rawg_rating ?? undefined)
+          gameScore10(item.game) ?? undefined
         }
         size="sm"
         className="w-full"

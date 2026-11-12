@@ -34,6 +34,14 @@ quem está na 1.1.1, e quem atualizou pela loja passa a receber
 runtime novo. Isso parece OTA quebrado e não é. Depois que a versão nova chega
 na loja, publique um update para ela.
 
+### Update aplicado no splash
+
+A partir do binário 1.1.3, quando a abertura roda o código embutido no binário (instalação
+nova, ou logo depois de atualizar pela loja), o app procura o update durante o
+splash e recarrega antes da primeira tela (`src/lib/startupUpdate.ts`, tetos de
+3s para checar e 8s para baixar). Antes disso a primeira sessão de quem
+instalava sempre rodava o código da loja.
+
 ### Conferir o que foi publicado
 
 O manifesto servido aos aparelhos mostra o `extra` real. Vale conferir sempre,
@@ -81,6 +89,7 @@ precisar identificar alguém — nunca email nem nome.
 | Área | Eventos |
 |---|---|
 | Sessão | `$screen` (automático); instalação, abertura e background vêm do `captureAppLifecycleEvents` |
+| Updates | `updates_status`, `updates_check` / `updates_check_failed` (a cada abertura); `updates_startup` (`result`: `applied`, `none`, `check_timeout`, `fetch_timeout`, `not_new`, `error`; `ms`), só quando a abertura roda o código embutido da loja |
 | Cadastro e login | `signup_succeeded` / `signup_failed`, `signin_succeeded` / `signin_failed` / `signin_canceled`, `signout`, `account_deleted` — todos com `method` (`email`, `apple`, `google`) |
 | Onboarding | `onboarding_started`, `onboarding_step_completed` (`step`, `name`, `skipped`, `count`), `onboarding_finished` (`last_step`) |
 | Review | `review_game_picked`, `review_editor_opened` (`mode`), `review_editor_abandoned` (`mode`, `had_body`, `had_score`), `review_created`, `review_updated`, `review_deleted` |
@@ -118,9 +127,25 @@ Em novembro de 2026 a RAWG ficou mais de uma semana sem responder. As funções 
 catálogo agora seguem esta ordem: cópia do cache dentro do TTL → cópia vencida
 (o `cache_meta` nunca é limpo) → tabela `games` como catálogo de reserva
 (`_shared/fallback.ts`). Depois de uma falha de serviço (timeout, rede, 5xx, 429),
-a RAWG é pulada por 2 minutos (`upstream:rawg:down` no `cache_meta`), para não
+a RAWG é pulada por 10 minutos (`upstream:rawg:down` no `cache_meta`), para não
 esperar 10s a cada chamada. Lista vazia nunca é gravada no cache. Respostas da
 reserva levam `fallback: true`.
+
+Entre a cópia vencida e a tabela `games` entra a IGDB (`_shared/catalog.ts`),
+que tem o catálogo inteiro. Precisa de `TWITCH_CLIENT_ID` e
+`TWITCH_CLIENT_SECRET` nas secrets do Supabase (app em dev.twitch.tv/console;
+cópia local em `~/.config/glype/twitch`, para testar as consultas).
+
+- O app identifica jogo pelo `rawg_id`. Jogo que só existe na IGDB ganha
+  **`rawg_id` negativo**: IGDB 1942 → `-1942`. `games-detail` e `ensure-game`
+  reconhecem o sinal e vão direto à IGDB.
+- Antes de virar chave negativa, cada jogo da IGDB é procurado na tabela
+  (igdb_id, slug, título + ano). Achou: volta com o `rawg_id` de verdade e o
+  `igdb_id` é gravado na linha. É o que mantém reviews antigas ligadas.
+- A nota da IGDB vai para `rawg_rating` na escala 0–5 da RAWG; o app mostra
+  "IGDB" quando o `rawg_id` é negativo.
+- Cache próprio (`igdb:*` no `cache_meta`). A IGDB limita a 4 req/s.
+- Respostas da IGDB levam `source: 'igdb'`.
 
 ## Banco de dados
 

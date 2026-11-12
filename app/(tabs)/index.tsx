@@ -27,6 +27,7 @@ import { useAuthStore } from '@/src/stores/auth';
 import { tokens } from '@/src/theme/tokens';
 import { hapticLight } from '@/src/utils/haptics';
 import type { FeedItem, Game } from '@/src/types/models';
+import { gameScore10 } from '@/src/utils/score';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -266,9 +267,7 @@ function HorizontalGameList({
           genre={game.genres[0]}
           coverUrl={game.cover_url}
           score={
-            game.metacritic_score != null
-              ? game.metacritic_score / 10
-              : (game.rawg_rating ?? undefined)
+            gameScore10(game) ?? undefined
           }
           size="sm"
           onPress={() => onPress(game)}

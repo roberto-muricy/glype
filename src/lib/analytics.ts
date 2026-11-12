@@ -119,4 +119,13 @@ export function trackScreen(screenName: string, props?: EventProps): void {
   client.screen(screenName, props as never);
 }
 
+/** Envia o que está na fila. Usado antes de recarregar o app, que descarta a fila. */
+export async function flushAnalytics(): Promise<void> {
+  try {
+    await client?.flush();
+  } catch {
+    /* best-effort */
+  }
+}
+
 export { client as posthogClient };

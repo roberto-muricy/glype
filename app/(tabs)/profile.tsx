@@ -13,6 +13,7 @@ import { useFollowCounts } from '@/src/hooks/useFeed';
 import { useFavoriteGames } from '@/src/hooks/useFavorites';
 import { type GameStatus } from '@/src/types/models';
 import { tokens } from '@/src/theme/tokens';
+import { genreLabel } from '@/src/utils/genres';
 
 const LEGAL_URLS = {
   privacy: 'https://roberto-muricy.github.io/glype/privacy.html',
@@ -247,7 +248,7 @@ export default function ProfileScreen() {
             <SectionHeader title={t('profile.favoriteGenres')} className="mt-2" />
             <View className="flex-row flex-wrap px-5 gap-2 mb-2">
               {profile!.favorite_genres.map((g) => (
-                <Pill key={g} label={g} variant="active" />
+                <Pill key={g} label={genreLabel(g, t)} variant="active" />
               ))}
             </View>
           </>
