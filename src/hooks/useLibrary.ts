@@ -8,7 +8,7 @@ import {
   getUserLibraryCounts,
 } from '@/src/services/library.service';
 import { track } from '@/src/lib/analytics';
-import type { GameStatus } from '@/src/types/models';
+import type { GameStatus, GameStatusSource } from '@/src/types/models';
 
 export const libraryKeys = {
   all: ['library'] as const,
@@ -60,8 +60,15 @@ export function useSetGameStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ gameId, status }: { gameId: string; status: GameStatus }) =>
-      setGameStatus(gameId, status),
+    mutationFn: ({
+      gameId,
+      status,
+      source,
+    }: {
+      gameId: string;
+      status: GameStatus;
+      source: GameStatusSource;
+    }) => setGameStatus(gameId, status, source),
     onSuccess: (_, { gameId, status }) => {
       track('game_added_to_library', { status, game_id: gameId });
       queryClient.invalidateQueries({ queryKey: libraryKeys.all });

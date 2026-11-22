@@ -158,6 +158,13 @@ cópia local em `~/.config/glype/twitch`, para testar as consultas).
 - Admins que recebem alerta de denúncia ficam em `app_admins` (migration 0012).
   A tabela não tem policy: só service_role e funções SECURITY DEFINER a leem.
   Inserir admin é escrita em produção — pedir autorização antes.
+- Mudanças de status na biblioteca ficam em `user_game_events` (migration
+  0015), gravadas por trigger em `user_games`; o app só lê. Toda escrita em
+  `user_games` deve mandar `source` (`library`, `game`, `discover`, `review`).
+  Eventos com `source = 'backfill'` são as linhas que já existiam: a data é a
+  de entrada na biblioteca, não a da mudança.
+- Coluna nova que o app envia só pode sair por OTA **depois** do `db push`:
+  o PostgREST recusa a escrita com coluna desconhecida.
 
 ## Ambiente
 

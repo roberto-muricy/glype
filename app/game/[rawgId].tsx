@@ -314,7 +314,7 @@ function LibraryButton({
       const id = resolvedId ?? (await resolveGameId());
       if (!id) return;
       setResolvedId(id);
-      setStatus.mutate({ gameId: id, status });
+      setStatus.mutate({ gameId: id, status, source: 'game' });
     } catch (e) {
       hapticError();
       captureException(e, { scope: 'game_set_status', rawg_id: rawgId });

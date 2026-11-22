@@ -1,5 +1,5 @@
 import { getSessionUser, supabase } from '@/src/lib/supabase';
-import type { GameStatus, UserGame } from '@/src/types/models';
+import type { GameStatus, GameStatusSource, UserGame } from '@/src/types/models';
 
 export async function getMyLibrary(status?: GameStatus): Promise<UserGame[]> {
   const user = await getSessionUser();
@@ -34,14 +34,18 @@ export async function getMyGameStatus(gameId: string): Promise<GameStatus | null
   return (data?.status as GameStatus) ?? null;
 }
 
-export async function setGameStatus(gameId: string, status: GameStatus): Promise<void> {
+export async function setGameStatus(
+  gameId: string,
+  status: GameStatus,
+  source: GameStatusSource,
+): Promise<void> {
   const user = await getSessionUser();
   if (!user) throw new Error('Não autenticado');
 
   const { error } = await supabase
     .from('user_games')
     .upsert(
-      { user_id: user.id, game_id: gameId, status },
+      { user_id: user.id, game_id: gameId, status, source },
       { onConflict: 'user_id,game_id' },
     );
 

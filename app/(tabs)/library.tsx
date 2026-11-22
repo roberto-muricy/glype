@@ -112,14 +112,14 @@ export default function LibraryScreen() {
           }
           const targetLabel = options[idx];
           const targetStatus = STATUS_LIST.find((s) => GAME_STATUS_LABEL[s] === targetLabel);
-          if (targetStatus) setGameStatus.mutate({ gameId: item.game_id, status: targetStatus });
+          if (targetStatus) setGameStatus.mutate({ gameId: item.game_id, status: targetStatus, source: 'library' });
         },
       );
     } else {
       Alert.alert(item.game.title, t('library.longPressAction'), [
         ...STATUS_LIST.filter((s) => s !== item.status).map((s) => ({
           text: GAME_STATUS_LABEL[s],
-          onPress: () => setGameStatus.mutate({ gameId: item.game_id, status: s }),
+          onPress: () => setGameStatus.mutate({ gameId: item.game_id, status: s, source: 'library' }),
         })),
         {
           text: t('common.remove'),

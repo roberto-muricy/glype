@@ -138,7 +138,7 @@ export function useWishlistFromDiscover() {
       const { error } = await supabase
         .from('user_games')
         .upsert(
-          { user_id: user.id, game_id: gameId, status: 'wishlist' },
+          { user_id: user.id, game_id: gameId, status: 'wishlist', source: 'discover' },
           { onConflict: 'user_id,game_id' },
         );
       if (error) throw new Error(error.message);
