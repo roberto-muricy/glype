@@ -25,6 +25,7 @@ import { tokens } from '@/src/theme/tokens';
 import { hapticLight, hapticMedium } from '@/src/utils/haptics';
 import type { Game } from '@/src/types/models';
 import { gameScore10 } from '@/src/utils/score';
+import { sizedImageUrl } from '@/src/lib/imageUrl';
 
 export type SwipeDirection = 'left' | 'right' | 'up';
 
@@ -189,7 +190,8 @@ function SwipeCardComponent({
 
   // ─── Render ─────────────────────────────────────────────────────────────────
 
-  const heroUrl = game.background_url ?? game.cover_url;
+  // Mesmo tamanho do prefetch do SwipeDeck, para reaproveitar o cache.
+  const heroUrl = sizedImageUrl(game.background_url ?? game.cover_url, 1280);
   const releaseYear = game.release_date ? new Date(game.release_date).getFullYear() : null;
   const score = gameScore10(game) ?? null;
 

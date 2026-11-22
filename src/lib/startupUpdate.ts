@@ -10,6 +10,8 @@
 // depois de atualizar pela loja). Nas outras, o comportamento padrão basta.
 // Os tetos de tempo impedem que uma rede ruim prenda a pessoa no splash.
 
+import { Platform } from 'react-native';
+
 import { flushAnalytics, track } from '@/src/lib/analytics';
 
 const CHECK_TIMEOUT_MS = 3_000;
@@ -35,6 +37,14 @@ export async function applyUpdateAtStartup(): Promise<void> {
   try {
     const Updates = await import('expo-updates');
     if (!Updates.isEnabled || !Updates.isEmbeddedLaunch) return;
+
+    // No iOS 15 o reload derruba o app: o expo-modules-core do SDK 54 libera
+    // um objeto do runtime antigo depois de ele ser desligado (Sentry GLYPE-G,
+    // 4 de 5 casos em iPhone 7 com iOS 15). A correção só existe em SDKs mais
+    // novos. Aqui o update fica para a abertura seguinte, como antes da 1.1.3.
+    if (Platform.OS === 'ios' && parseInt(String(Platform.Version), 10) < 16) {
+      return done('skipped_old_ios');
+    }
 
     const check = await withTimeout(Updates.checkForUpdateAsync(), CHECK_TIMEOUT_MS);
     if (check === 'timeout') return done('check_timeout');

@@ -5,6 +5,7 @@ import { Button } from '@/src/components/ui';
 import { TrophyIcon } from '@/src/components/ui/icons';
 import { tokens } from '@/src/theme/tokens';
 import type { FavoriteGame } from '@/src/types/models';
+import { sizedImageUrl } from '@/src/lib/imageUrl';
 
 // ─── Empty CTA ────────────────────────────────────────────────────────────────
 
@@ -102,7 +103,7 @@ export function TopGamesRow({ favorites, onGamePress }: TopGamesRowProps) {
           >
             {fav.game.cover_url ? (
               <Image
-                source={{ uri: fav.game.cover_url }}
+                source={{ uri: sizedImageUrl(fav.game.cover_url, 640) }}
                 style={{ width: COVER_W, height: COVER_H }}
                 contentFit="cover"
                 cachePolicy="memory-disk"

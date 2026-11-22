@@ -6,6 +6,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/src/utils/cn';
 import { tokens } from '@/src/theme/tokens';
 import { ScoreBadge } from './ScoreBadge';
+import { sizedImageUrl } from '@/src/lib/imageUrl';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -68,7 +69,7 @@ export function GameCard({
         {coverUrl ? (
           <View className={coverVariants({ size })}>
             <Image
-              source={{ uri: coverUrl }}
+              source={{ uri: sizedImageUrl(coverUrl, 640) }}
               accessibilityIgnoresInvertColors
               contentFit="cover"
               cachePolicy="memory-disk"

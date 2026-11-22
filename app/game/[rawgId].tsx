@@ -26,6 +26,7 @@ import { type GameStatus } from '@/src/types/models';
 import { tokens } from '@/src/theme/tokens';
 import { CloseIcon, TrashIcon, CheckIcon } from '@/src/components/ui/icons';
 import type { Game } from '@/src/types/models';
+import { sizedImageUrl } from '@/src/lib/imageUrl';
 
 export default function GameDetailScreen() {
   const { rawgId } = useLocalSearchParams<{ rawgId: string }>();
@@ -48,7 +49,7 @@ export default function GameDetailScreen() {
             <Skeleton width="100%" height={320} className="rounded-none" />
           ) : game?.background_url ?? game?.cover_url ? (
             <Image
-              source={{ uri: (game.background_url ?? game.cover_url)! }}
+              source={{ uri: sizedImageUrl((game.background_url ?? game.cover_url)!, 1280) }}
               style={{ width: '100%', height: 320 }}
               contentFit="cover"
               cachePolicy="memory-disk"

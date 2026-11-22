@@ -8,6 +8,7 @@ import { View } from 'react-native';
 import { Image } from 'expo-image';
 import { SwipeCard, type SwipeDirection } from './SwipeCard';
 import type { Game } from '@/src/types/models';
+import { sizedImageUrl } from '@/src/lib/imageUrl';
 
 /** Casa com a animação de saída do SwipeCard (withTiming 250ms). */
 const EXIT_DURATION = 240;
@@ -67,7 +68,7 @@ export function SwipeDeck({
   useEffect(() => {
     const urls = queue
       .slice(visibleCount, visibleCount + PREFETCH_AHEAD)
-      .map((g) => g.background_url ?? g.cover_url)
+      .map((g) => sizedImageUrl(g.background_url ?? g.cover_url, 1280))
       .filter((u): u is string => Boolean(u));
     if (urls.length === 0) return;
     Image.prefetch(urls, { cachePolicy: 'memory-disk' }).catch(() => undefined);

@@ -42,6 +42,10 @@ splash e recarrega antes da primeira tela (`src/lib/startupUpdate.ts`, tetos de
 3s para checar e 8s para baixar). Antes disso a primeira sessão de quem
 instalava sempre rodava o código da loja.
 
+No iOS 15 isso fica desligado: o reload derrubava o app (Sentry GLYPE-G), por um
+bug do `expo-modules-core` do SDK 54 corrigido só em SDKs mais novos. Ao subir o
+SDK, dá para tirar a exceção.
+
 ### Conferir o que foi publicado
 
 O manifesto servido aos aparelhos mostra o `extra` real. Vale conferir sempre,
@@ -89,7 +93,7 @@ precisar identificar alguém — nunca email nem nome.
 | Área | Eventos |
 |---|---|
 | Sessão | `$screen` (automático); instalação, abertura e background vêm do `captureAppLifecycleEvents` |
-| Updates | `updates_status`, `updates_check` / `updates_check_failed` (a cada abertura); `updates_startup` (`result`: `applied`, `none`, `check_timeout`, `fetch_timeout`, `not_new`, `error`; `ms`), só quando a abertura roda o código embutido da loja |
+| Updates | `updates_status`, `updates_check` / `updates_check_failed` (a cada abertura); `updates_startup` (`result`: `applied`, `none`, `check_timeout`, `fetch_timeout`, `not_new`, `skipped_old_ios`, `error`; `ms`), só quando a abertura roda o código embutido da loja |
 | Cadastro e login | `signup_succeeded` / `signup_failed`, `signin_succeeded` / `signin_failed` / `signin_canceled`, `signout`, `account_deleted` — todos com `method` (`email`, `apple`, `google`) |
 | Onboarding | `onboarding_started`, `onboarding_step_completed` (`step`, `name`, `skipped`, `count`), `onboarding_finished` (`last_step`) |
 | Review | `review_game_picked`, `review_editor_opened` (`mode`), `review_editor_abandoned` (`mode`, `had_body`, `had_score`), `review_created`, `review_updated`, `review_deleted` |
