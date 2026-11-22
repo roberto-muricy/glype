@@ -39,6 +39,7 @@ import {
   TrashIcon,
 } from '@/src/components/ui/icons';
 import type { ReviewComment } from '@/src/types/models';
+import { sizedImageUrl } from '@/src/lib/imageUrl';
 
 export default function ReviewDetailScreen() {
   const router = useRouter();
@@ -287,7 +288,7 @@ export default function ReviewDetailScreen() {
           <View style={{ height: 200, backgroundColor: tokens.color.bg.surface }}>
             {(review.game.background_url ?? review.game.cover_url) ? (
               <Image
-                source={{ uri: review.game.background_url ?? review.game.cover_url! }}
+                source={{ uri: sizedImageUrl(review.game.background_url ?? review.game.cover_url!, 1280) }}
                 style={{ width: '100%', height: '100%' }}
                 resizeMode="cover"
                 accessibilityIgnoresInvertColors

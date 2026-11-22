@@ -7,6 +7,7 @@ import { tokens } from '@/src/theme/tokens';
 import { useCollectionLabels } from '@/src/i18n/useCollectionLabels';
 import type { CollectionDef } from '@/src/config/collections';
 import type { Game } from '@/src/types/models';
+import { sizedImageUrl } from '@/src/lib/imageUrl';
 
 export interface CollectionCardProps {
   collection: CollectionDef;
@@ -106,7 +107,7 @@ export function CollectionCard({
               >
                 {game.cover_url ? (
                   <Image
-                    source={{ uri: game.cover_url }}
+                    source={{ uri: sizedImageUrl(game.cover_url, 640) }}
                     style={{ width: COVER_W, height: COVER_H }}
                     contentFit="cover"
                     cachePolicy="memory-disk"

@@ -21,6 +21,7 @@ import { tokens } from '@/src/theme/tokens';
 import { ChevronLeftIcon, EditIcon, EllipsisIcon, HeartIcon, HeartOutlineIcon, LocationIcon, PersonCircleIcon, TrashIcon } from '@/src/components/ui/icons';
 import type { ReviewWithGame } from '@/src/services/profile.service';
 import { genreLabel } from '@/src/utils/genres';
+import { sizedImageUrl } from '@/src/lib/imageUrl';
 
 export default function PublicProfileScreen() {
   const router = useRouter();
@@ -368,7 +369,7 @@ export default function PublicProfileScreen() {
                       >
                         {g.game.cover_url ? (
                           <Image
-                            source={{ uri: g.game.cover_url }}
+                            source={{ uri: sizedImageUrl(g.game.cover_url, 640) }}
                             style={{ width: '100%', height: '100%' }}
                             contentFit="cover"
                             cachePolicy="memory-disk"
@@ -544,7 +545,7 @@ function ReviewCard({
         <View className="rounded-lg overflow-hidden" style={{ width: 44, height: 56 }}>
           {review.game.cover_url ? (
             <Image
-              source={{ uri: review.game.cover_url }}
+              source={{ uri: sizedImageUrl(review.game.cover_url, 640) }}
               style={{ width: 44, height: 56 }}
               contentFit="cover"
               cachePolicy="memory-disk"

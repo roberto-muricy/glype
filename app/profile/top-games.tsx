@@ -22,6 +22,7 @@ import { useAuthStore } from '@/src/stores/auth';
 import { hapticLight, hapticError } from '@/src/utils/haptics';
 import { tokens } from '@/src/theme/tokens';
 import type { Game } from '@/src/types/models';
+import { sizedImageUrl } from '@/src/lib/imageUrl';
 
 // Estado unificado: jogo escolhido com UUID opcional (resolvido no save).
 interface PickedGame {
@@ -330,7 +331,7 @@ function PickedRow({
       <View style={{ width: 40, height: 54, borderRadius: 6, overflow: 'hidden' }}>
         {game.coverUrl ? (
           <Image
-            source={{ uri: game.coverUrl }}
+            source={{ uri: sizedImageUrl(game.coverUrl, 640) }}
             style={{ width: 40, height: 54 }}
             accessibilityIgnoresInvertColors
           />
@@ -407,7 +408,7 @@ function SearchResultRow({
       <View style={{ width: 44, height: 58, borderRadius: 6, overflow: 'hidden' }}>
         {game.cover_url ? (
           <Image
-            source={{ uri: game.cover_url }}
+            source={{ uri: sizedImageUrl(game.cover_url, 640) }}
             style={{ width: 44, height: 58 }}
             accessibilityIgnoresInvertColors
           />

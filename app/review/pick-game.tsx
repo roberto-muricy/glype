@@ -18,6 +18,7 @@ import { track } from '@/src/lib/analytics';
 import { CloseIcon, SearchTabIcon } from '@/src/components/ui/icons';
 import { tokens } from '@/src/theme/tokens';
 import type { Game } from '@/src/types/models';
+import { sizedImageUrl } from '@/src/lib/imageUrl';
 
 export default function PickGameScreen() {
   const router = useRouter();
@@ -139,7 +140,7 @@ function GameRow({ game, onPress }: { game: Game; onPress: () => void }) {
       >
         {game.cover_url ? (
           <Image
-            source={{ uri: game.cover_url }}
+            source={{ uri: sizedImageUrl(game.cover_url, 640) }}
             style={{ width: 52, height: 68 }}
             accessibilityIgnoresInvertColors
           />
