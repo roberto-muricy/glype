@@ -79,11 +79,15 @@ export interface ReviewDraft {
 
 export type GameStatus = 'playing' | 'played' | 'wishlist' | 'dropped';
 
+/** De onde veio o status (user_games.source, copiado para user_game_events). */
+export type GameStatusSource = 'library' | 'game' | 'discover' | 'review';
+
 export interface UserGame {
   id: string;
   user_id: string;
   game_id: string;
   status: GameStatus;
+  source: GameStatusSource | null;
   added_at: string;
   game: Game; // join com games
 }

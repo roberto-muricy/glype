@@ -540,11 +540,57 @@ export type Database = {
           },
         ]
       }
+      user_game_events: {
+        Row: {
+          changed_at: string
+          from_status: string | null
+          game_id: string
+          id: number
+          source: string | null
+          to_status: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string
+          from_status?: string | null
+          game_id: string
+          id?: never
+          source?: string | null
+          to_status?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_at?: string
+          from_status?: string | null
+          game_id?: string
+          id?: never
+          source?: string | null
+          to_status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_game_events_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_game_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_games: {
         Row: {
           added_at: string | null
           game_id: string
           id: string
+          source: string | null
           status: string
           user_id: string
         }
@@ -552,6 +598,7 @@ export type Database = {
           added_at?: string | null
           game_id: string
           id?: string
+          source?: string | null
           status: string
           user_id: string
         }
@@ -559,6 +606,7 @@ export type Database = {
           added_at?: string | null
           game_id?: string
           id?: string
+          source?: string | null
           status?: string
           user_id?: string
         }

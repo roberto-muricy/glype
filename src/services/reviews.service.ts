@@ -81,7 +81,7 @@ export async function createReview(gameId: string, draft: ReviewDraft): Promise<
       const status = draft.completed ? 'played' : 'playing';
       await supabase
         .from('user_games')
-        .insert({ user_id: user.id, game_id: gameId, status });
+        .insert({ user_id: user.id, game_id: gameId, status, source: 'review' });
     }
   } catch {
     // Não falha a criação da review se a sincronização com a biblioteca der erro.
