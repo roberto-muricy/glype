@@ -195,6 +195,7 @@ function AuthGate() {
       <Stack.Screen name="profile/top-games" options={{ presentation: 'card' }} />
       <Stack.Screen name="profile/language" options={{ presentation: 'card' }} />
       <Stack.Screen name="profile/stats" options={{ presentation: 'card' }} />
+      <Stack.Screen name="profile/month" options={{ presentation: 'card' }} />
       <Stack.Screen name="profile/library" options={{ presentation: 'card' }} />
       <Stack.Screen name="profile/blocked" options={{ presentation: 'card' }} />
       <Stack.Screen name="collection/[id]" options={{ presentation: 'card' }} />

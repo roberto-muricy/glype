@@ -261,8 +261,15 @@ export default function ProfileScreen() {
           <Text className="text-body text-text-body">{user?.email ?? '—'}</Text>
         </Card>
 
-        {/* ─── Estatísticas + Idioma + Bloqueados ─── */}
+        {/* ─── Seu mês + Estatísticas + Idioma + Bloqueados ─── */}
         <View className="mx-5 mt-3 rounded-xl bg-bg-elevated border border-border-subtle overflow-hidden">
+          <LinkRow
+            icon="calendar-outline"
+            label={t('recap.entryLabel')}
+            external={false}
+            onPress={() => router.push('/profile/month' as never)}
+          />
+          <RowDivider />
           <LinkRow
             icon="stats-chart-outline"
             label={t('stats.entryLabel')}
