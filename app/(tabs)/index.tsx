@@ -5,7 +5,6 @@ import {
   Text,
   View,
   Pressable,
-  useWindowDimensions,
   type ViewStyle,
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -94,6 +93,9 @@ export default function HomeScreen() {
           <NotificationBell onPress={() => router.push('/notifications' as never)} />
         </View>
 
+        {/* ─── Descobrir (swipe deck) ─── */}
+        <DiscoverPromoCard onPress={() => router.push('/discover' as never)} />
+
         {/* ─── Em Alta ─── */}
         <SectionHeader
           title={t('home.trending')}
@@ -120,9 +122,6 @@ export default function HomeScreen() {
             }
           />
         )}
-
-        {/* ─── Descobrir (swipe deck) ─── */}
-        <DiscoverPromoCard onPress={() => router.push('/discover' as never)} />
 
         {/* ─── Para Você ─── */}
         <SectionHeader
@@ -497,88 +496,43 @@ const listContentStyle: ViewStyle = {
 };
 
 // ─── DiscoverPromoCard ───────────────────────────────────────────────────────
-// Card destacado na home que abre o swipe deck.
+// Atalho para o swipe deck, logo abaixo da saudação. Era um bloco azul sólido
+// entre as listas de capas e quebrava o ritmo da Home; virou uma linha fina
+// com contorno azul.
 
 function DiscoverPromoCard({ onPress }: { onPress: () => void }) {
   const { t } = useTranslation();
-  // Ícone + texto + pílula numa linha só cabem na fonte padrão. Aumentada, a
-  // pílula empurrava o título até quebrar no meio ("Desco/brir"), então acima
-  // do limite ela desce para baixo do texto.
-  const { fontScale } = useWindowDimensions();
-  const stacked = fontScale > 1.3;
   return (
-    <View className="mx-5 mt-4">
+    <View className="mx-5 mt-3 mb-1">
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={t('discover.homeCardTitle')}
+        accessibilityHint={t('discover.homeCardSubtitle')}
         style={({ pressed }) => ({
-          borderRadius: 16,
-          overflow: 'hidden',
-          opacity: pressed ? 0.85 : 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          paddingHorizontal: 16,
+          paddingVertical: 11,
+          borderRadius: 999,
+          borderWidth: 1,
+          borderColor: tokens.color.brand.primary,
+          backgroundColor: pressed ? tokens.color.bg.elevated : 'transparent',
         })}
       >
-        <View
+        <Ionicons name="sparkles" size={16} color={tokens.color.brand.light} />
+        <Text
           style={{
-            backgroundColor: tokens.color.brand.primary,
-            padding: 18,
-            flexDirection: stacked ? 'column' : 'row',
-            alignItems: stacked ? 'flex-start' : 'center',
-            gap: 14,
+            flex: 1,
+            fontFamily: tokens.fontFamily.medium,
+            fontSize: 14,
+            color: tokens.color.text.primary,
           }}
         >
-          <View
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: 'rgba(255,255,255,0.18)',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name="sparkles" size={22} color="#fff" />
-          </View>
-          <View style={{ flex: stacked ? undefined : 1, alignSelf: 'stretch' }}>
-            <Text
-              style={{
-                fontFamily: tokens.fontFamily.medium,
-                fontSize: 16,
-                color: '#fff',
-              }}
-            >
-              {t('discover.homeCardTitle')}
-            </Text>
-            <Text
-              style={{
-                fontFamily: tokens.fontFamily.regular,
-                fontSize: 12,
-                color: 'rgba(255,255,255,0.85)',
-                marginTop: 2,
-              }}
-            >
-              {t('discover.homeCardSubtitle')}
-            </Text>
-          </View>
-          <View
-            style={{
-              paddingHorizontal: 14,
-              paddingVertical: 8,
-              borderRadius: 999,
-              backgroundColor: '#fff',
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: tokens.fontFamily.medium,
-                fontSize: 13,
-                color: tokens.color.brand.primary,
-              }}
-            >
-              {t('discover.homeCardCta')}
-            </Text>
-          </View>
-        </View>
+          {t('discover.homeCardTitle')}
+        </Text>
+        <Ionicons name="arrow-forward" size={16} color={tokens.color.brand.light} />
       </Pressable>
     </View>
   );
