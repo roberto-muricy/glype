@@ -4,7 +4,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Glype',
   slug: 'glype',
-  version: '1.1.3',
+  version: '1.1.4',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'glype',
@@ -25,7 +25,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: '#0066FF',
     },
     package: 'com.glype.app',
-    edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
   },
   web: {
@@ -34,6 +33,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
+    'expo-font',
+    'expo-image',
+    'expo-web-browser',
     'expo-secure-store',
     'expo-apple-authentication',
     [
