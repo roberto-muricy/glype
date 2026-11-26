@@ -42,9 +42,17 @@ splash e recarrega antes da primeira tela (`src/lib/startupUpdate.ts`, tetos de
 3s para checar e 8s para baixar). Antes disso a primeira sessão de quem
 instalava sempre rodava o código da loja.
 
-No iOS 15 isso fica desligado: o reload derrubava o app (Sentry GLYPE-G), por um
-bug do `expo-modules-core` do SDK 54 corrigido só em SDKs mais novos. Ao subir o
-SDK, dá para tirar a exceção.
+No binário 1.1.3 isso fica desligado no iOS 15: o reload derrubava o app
+(Sentry GLYPE-G), por um bug do `expo-modules-core` do SDK 54 corrigido no
+55.0.18 (expo/expo#43937, nunca levado ao 54). A 1.1.4 sobe para o SDK 55 e
+aplica o update no splash em todo iOS.
+
+### SDK do Expo
+
+O SDK 55 é o último que aceita iOS 15 (mínimo 15.1). Do 56 em diante o mínimo
+é iOS 16.4: quem tem iPhone 7 ou 6s para de receber versões novas da loja e
+fica preso no último binário compatível, sem OTA novo. Antes de subir para o
+56+, conferir no PostHog quantas pessoas ainda abrem o app no iOS 15.
 
 ### Conferir o que foi publicado
 
@@ -93,7 +101,7 @@ precisar identificar alguém — nunca email nem nome.
 | Área | Eventos |
 |---|---|
 | Sessão | `$screen` (automático); instalação, abertura e background vêm do `captureAppLifecycleEvents` |
-| Updates | `updates_status`, `updates_check` / `updates_check_failed` (a cada abertura); `updates_startup` (`result`: `applied`, `none`, `check_timeout`, `fetch_timeout`, `not_new`, `skipped_old_ios`, `error`; `ms`), só quando a abertura roda o código embutido da loja |
+| Updates | `updates_status`, `updates_check` / `updates_check_failed` (a cada abertura); `updates_startup` (`result`: `applied`, `none`, `check_timeout`, `fetch_timeout`, `not_new`, `error`; `ms`; `skipped_old_ios` só no binário 1.1.3), só quando a abertura roda o código embutido da loja |
 | Cadastro e login | `signup_succeeded` / `signup_failed`, `signin_succeeded` / `signin_failed` / `signin_canceled`, `signout`, `account_deleted` — todos com `method` (`email`, `apple`, `google`) |
 | Onboarding | `onboarding_started`, `onboarding_step_completed` (`step`, `name`, `skipped`, `count`), `onboarding_finished` (`last_step`) |
 | Review | `review_game_picked`, `review_editor_opened` (`mode`), `review_editor_abandoned` (`mode`, `had_body`, `had_score`), `review_created`, `review_updated`, `review_deleted` |
